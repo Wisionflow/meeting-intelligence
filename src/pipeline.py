@@ -129,13 +129,13 @@ def process_audio_file(
             }
         except Exception as e:
             print(f"  [pipeline] Диаризация не удалась: {e} — продолжаю без неё")
-            transcript_text = format_transcript_with_timestamps(result)
+            transcript_text = format_transcript_with_timestamps(result["segments"])
     elif diarize and not HF_TOKEN:
         print("  [2/4] Пропускаю диаризацию (HF_TOKEN не задан)")
-        transcript_text = format_transcript_with_timestamps(result)
+        transcript_text = format_transcript_with_timestamps(result["segments"])
     else:
         print("  [2/4] Пропускаю диаризацию")
-        transcript_text = format_transcript_with_timestamps(result)
+        transcript_text = format_transcript_with_timestamps(result["segments"])
 
     # ── Stage 3: Analysis ─────────────────────────────────────────────────────
     analysis_text = ""
@@ -163,12 +163,12 @@ def process_audio_file(
         try:
             from src.notion_client import sync_transcript_to_notion
             print("  [notion] Синхронизирую...")
+            title = f"{get_category(audio_path)} — {transcript_path.stem}"
             sync_transcript_to_notion(
                 transcript_path=transcript_path,
-                audio_filename=audio_path.name,
+                title=title,
+                audio_path=str(audio_path),
                 category=get_category(audio_path),
-                analysis=analysis_text,
-                metadata=result,
             )
         except Exception as e:
             print(f"  [notion] Не удалось синхронизировать: {e}")

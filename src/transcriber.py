@@ -3,7 +3,7 @@
 import time
 from pathlib import Path
 from faster_whisper import WhisperModel
-from src.config import WHISPER_MODEL, WHISPER_DEVICE, WHISPER_LANGUAGE
+from src.config import WHISPER_MODEL, WHISPER_DEVICE, WHISPER_LANGUAGE, WHISPER_COMPUTE_TYPE
 
 
 _model = None
@@ -14,11 +14,10 @@ def get_model() -> WhisperModel:
     global _model
     if _model is None:
         print(f"Загрузка модели {WHISPER_MODEL} на {WHISPER_DEVICE}...")
-        compute_type = "float16" if WHISPER_DEVICE == "cuda" else "int8"
         _model = WhisperModel(
             WHISPER_MODEL,
             device=WHISPER_DEVICE,
-            compute_type=compute_type,
+            compute_type=WHISPER_COMPUTE_TYPE,
         )
         print("Модель загружена.")
     return _model

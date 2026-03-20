@@ -11,9 +11,9 @@ from pathlib import Path
 
 import numpy as np
 
-from src.config import KNOWLEDGE_BASE_DIR
+from src.config import EMBEDDINGS_DIR
 
-EMBEDDINGS_FILE = KNOWLEDGE_BASE_DIR / "people" / "_speaker_embeddings.json"
+EMBEDDINGS_FILE = EMBEDDINGS_DIR / "_speaker_embeddings.json"
 SCHEMA_VERSION = 1
 
 # Thresholds: precision over recall
