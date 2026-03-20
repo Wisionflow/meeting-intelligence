@@ -1,0 +1,34 @@
+# Environment
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Data (runtime, too large for git)
+data/embeddings/
+*.db
+
+# Audio files
+*.m4a
+*.mp3
+*.wav
+*.ogg
+*.flac
+*.mp4
+*.aac
+*.wma
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
