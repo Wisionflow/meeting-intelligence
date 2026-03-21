@@ -34,7 +34,7 @@ logging.basicConfig(
 log = logging.getLogger("mi-server")
 
 app = FastAPI(
-    title="Meeting Intelligence",
+    title="VisionFlow — Meeting Intelligence",
     version="1.0.0",
     description="Audio → Transcript → Analysis → Report",
 )

@@ -210,7 +210,7 @@ _DEFAULT_TEMPLATE = """<!DOCTYPE html>
 </div>
 
 <div class="footer">
-  Сгенерировано Meeting Intelligence — Operational Intelligence
+  Сгенерировано VisionFlow — Meeting Intelligence
 </div>
 
 </body>
