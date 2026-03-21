@@ -1,5 +1,6 @@
-"""First-run check — verify all dependencies are configured.
+"""VisionFlow — System Check.
 
+Verifies all dependencies are configured.
 Run after setup:
     python scripts/check.py
 """
@@ -11,8 +12,9 @@ sys.path.insert(0, ".")
 
 
 async def main():
-    print("Meeting Intelligence — System Check\n")
+    print("VisionFlow — System Check\n")
     ok = True
+    backends = 0
 
     # 1. Python version
     py = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
@@ -22,31 +24,39 @@ async def main():
         print(f"  ✗ Python {py} — need 3.10+")
         ok = False
 
-    # 2. Groq API key
-    from src.config import GROQ_API_KEY
+    # 2. Transcription backends
+    print("\n  Transcription backends:")
+
+    from src.config import GROQ_API_KEY, OPENAI_API_KEY
+
     if GROQ_API_KEY:
-        print("  ✓ GROQ_API_KEY set")
-        # Test API
-        try:
-            import httpx
-            async with httpx.AsyncClient(timeout=10) as client:
-                resp = await client.get(
-                    "https://api.groq.com/openai/v1/models",
-                    headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
-                )
-                if resp.status_code == 200:
-                    print("  ✓ Groq API responds")
-                else:
-                    print(f"  ✗ Groq API error: {resp.status_code}")
-                    ok = False
-        except Exception as e:
-            print(f"  ✗ Groq API unreachable: {e}")
-            ok = False
+        print("  ✓ [1] Groq API key set (cloud, fast)")
+        backends += 1
     else:
-        print("  ✗ GROQ_API_KEY not set")
+        print("  · [1] Groq — not configured (optional)")
+
+    if OPENAI_API_KEY:
+        print("  ✓ [2] OpenAI API key set (cloud, paid)")
+        backends += 1
+    else:
+        print("  · [2] OpenAI — not configured (optional)")
+
+    # Local whisper — always available
+    try:
+        from faster_whisper import WhisperModel
+        print("  ✓ [3] Local faster-whisper installed (always available)")
+        backends += 1
+    except ImportError:
+        print("  ✗ [3] faster-whisper not installed")
+        ok = False
+
+    print(f"  → {backends} backend(s) available")
+    if backends == 0:
+        print("  ✗ No transcription backends! At least faster-whisper required.")
         ok = False
 
     # 3. Claude API key
+    print()
     from src.config import ANTHROPIC_API_KEY
     if ANTHROPIC_API_KEY:
         print("  ✓ ANTHROPIC_API_KEY set")
@@ -63,28 +73,37 @@ async def main():
         await conn.close()
         print(f"  ✓ PostgreSQL connected ({ver.split(',')[0]})")
 
-        # Check tables
         conn = await asyncpg.connect(POSTGRES_DSN)
-        exists = await conn.fetchval(
-            "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = 'mi_meetings')"
-        )
+        tables = ["mi_meetings", "mi_profiles", "mi_communications"]
+        for t in tables:
+            exists = await conn.fetchval(
+                "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = $1)", t
+            )
+            if exists:
+                count = await conn.fetchval(f"SELECT COUNT(*) FROM {t}")
+                print(f"  ✓ {t}: {count} records")
+            else:
+                print(f"  ⚠ {t} not found — run: python scripts/setup_db.py")
         await conn.close()
-        if exists:
-            print("  ✓ mi_meetings table exists")
-        else:
-            print("  ⚠ mi_meetings table not found — run: python scripts/setup_db.py")
-            ok = False
     except Exception as e:
         print(f"  ✗ PostgreSQL: {e}")
         ok = False
 
-    # 5. Prompts
+    # 5. ffmpeg
+    import shutil
+    if shutil.which("ffmpeg"):
+        print("  ✓ ffmpeg installed")
+    else:
+        print("  ✗ ffmpeg not found (required for audio processing)")
+        ok = False
+
+    # 6. Prompts
     from pathlib import Path
     prompt = Path("prompts/meeting_analysis.txt")
     if prompt.exists():
-        print(f"  ✓ Analysis prompt: {prompt}")
+        print(f"  ✓ Analysis prompt loaded")
     else:
-        print(f"  ⚠ Analysis prompt not found at {prompt} — will use default")
+        print(f"  · Using default analysis prompt")
 
     # Summary
     print()
@@ -92,7 +111,7 @@ async def main():
         print("✓ All checks passed. Ready to start.")
         print("  Run: python -m src.server")
     else:
-        print("✗ Some checks failed. Fix issues above before starting.")
+        print("✗ Some checks failed. Fix issues above.")
 
     return 0 if ok else 1
 

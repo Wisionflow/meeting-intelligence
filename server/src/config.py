@@ -21,6 +21,16 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "whisper-large-v3")
 GROQ_API_URL = "https://api.groq.com/openai/v1/audio/transcriptions"
 
+# ─── OpenAI (Whisper API fallback) ──────────────────────────────────────────
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+
+# ─── Local Whisper (always available) ───────────────────────────────────────
+
+WHISPER_MODEL = os.getenv("WHISPER_MODEL", "large-v3")
+WHISPER_DEVICE = os.getenv("WHISPER_DEVICE", "cpu")
+WHISPER_COMPUTE_TYPE = os.getenv("WHISPER_COMPUTE_TYPE", "int8")  # int8 for CPU, float16 for GPU
+
 # ─── Claude (analysis) ──────────────────────────────────────────────────────
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")

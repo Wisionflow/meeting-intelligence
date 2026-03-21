@@ -2,7 +2,12 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install dependencies
+# System deps for faster-whisper (CTranslate2)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -12,7 +17,7 @@ COPY scripts/ scripts/
 COPY prompts/ prompts/
 COPY templates/ templates/
 
-# Create upload dir
+# Create dirs
 RUN mkdir -p /tmp/mi_uploads
 
 EXPOSE 8080
