@@ -253,6 +253,9 @@ class CommunicateRequest(BaseModel):
     goal: str = "respond"
     msg_type: str = "email"
     include_notes: bool = False
+    user_id: str = ""
+    context_type: str = "text"  # text | audio
+    audio_filename: str = ""
 
 
 @app.post("/api/communicate")
@@ -273,7 +276,88 @@ async def api_communicate(req: CommunicateRequest):
         msg_type=req.msg_type,
         include_notes=req.include_notes,
     )
+
+    # Save to DB
+    pool = await get_pool()
+    row = await pool.fetchrow(
+        """
+        INSERT INTO mi_communications
+            (user_id, profile_id, profile_name, context, context_type,
+             audio_filename, task, goal, msg_type,
+             generated_message, notes, tokens_input, tokens_output)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        RETURNING id
+        """,
+        req.user_id,
+        req.profile_id,
+        guide_data.get("display_name", ""),
+        req.context[:10000],
+        req.context_type,
+        req.audio_filename or None,
+        req.task,
+        req.goal,
+        req.msg_type,
+        result.get("message", ""),
+        result.get("notes"),
+        result.get("tokens", {}).get("input", 0),
+        result.get("tokens", {}).get("output", 0),
+    )
+    result["id"] = row["id"]
+    log.info("Communication #%d saved: %s → %s", row["id"], req.user_id or "anon", req.profile_id)
+
     return result
+
+
+# ─── Communication history ──────────────────────────────────────────────
+
+@app.get("/api/communications")
+async def api_list_communications(user_id: str = "", limit: int = 30, offset: int = 0):
+    pool = await get_pool()
+    if user_id:
+        rows = await pool.fetch(
+            """
+            SELECT id, profile_id, profile_name, task, goal,
+                   LEFT(generated_message, 100) as preview,
+                   context_type, created_at
+            FROM mi_communications
+            WHERE user_id = $1
+            ORDER BY created_at DESC
+            LIMIT $2 OFFSET $3
+            """,
+            user_id, limit, offset,
+        )
+    else:
+        rows = await pool.fetch(
+            """
+            SELECT id, user_id, profile_id, profile_name, task, goal,
+                   LEFT(generated_message, 100) as preview,
+                   context_type, created_at
+            FROM mi_communications
+            ORDER BY created_at DESC
+            LIMIT $1 OFFSET $2
+            """,
+            limit, offset,
+        )
+
+    items = []
+    for r in rows:
+        d = dict(r)
+        if d.get("created_at"):
+            d["created_at"] = d["created_at"].isoformat()
+        items.append(d)
+    return {"communications": items}
+
+
+@app.get("/api/communications/{comm_id}")
+async def api_get_communication(comm_id: int):
+    pool = await get_pool()
+    row = await pool.fetchrow("SELECT * FROM mi_communications WHERE id = $1", comm_id)
+    if not row:
+        raise HTTPException(404, "Communication not found")
+    d = dict(row)
+    if d.get("created_at"):
+        d["created_at"] = d["created_at"].isoformat()
+    return d
 
 
 # ─── Transcribe audio for context ───────────────────────────────────────────

@@ -51,6 +51,30 @@ CREATE TABLE IF NOT EXISTS mi_profile_access (
     access_level    TEXT DEFAULT 'guide',
     PRIMARY KEY (user_id, profile_id)
 );
+
+-- Communication history (every generated message)
+CREATE TABLE IF NOT EXISTS mi_communications (
+    id              SERIAL PRIMARY KEY,
+    user_id         TEXT DEFAULT '',
+    profile_id      TEXT NOT NULL,
+    profile_name    TEXT DEFAULT '',
+    context         TEXT DEFAULT '',
+    context_type    TEXT DEFAULT 'text',     -- text | audio
+    audio_filename  TEXT,
+    transcript      TEXT,
+    task            TEXT DEFAULT '',
+    goal            TEXT DEFAULT 'respond',
+    msg_type        TEXT DEFAULT 'email',
+    generated_message TEXT NOT NULL,
+    notes           TEXT,
+    tokens_input    INT DEFAULT 0,
+    tokens_output   INT DEFAULT 0,
+    created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_mi_comm_user ON mi_communications(user_id);
+CREATE INDEX IF NOT EXISTS idx_mi_comm_profile ON mi_communications(profile_id);
+CREATE INDEX IF NOT EXISTS idx_mi_comm_created ON mi_communications(created_at DESC);
 """
 
 
@@ -70,6 +94,9 @@ async def main():
 
         count_a = await conn.fetchval("SELECT COUNT(*) FROM mi_profile_access")
         print(f"  mi_profile_access: {count_a} records")
+
+        count_c = await conn.fetchval("SELECT COUNT(*) FROM mi_communications")
+        print(f"  mi_communications: {count_c} records")
 
     finally:
         await conn.close()

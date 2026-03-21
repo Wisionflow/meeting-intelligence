@@ -335,12 +335,12 @@ const API = '';
 let selectedProfile = null;
 let selectedGoal = 'respond';
 let profiles = [];
-let history = JSON.parse(localStorage.getItem('vf_comm_history') || '[]');
+let history = [];
+let lastAudioFilename = '';
 
 // ─── Init ───────────────────────────────────────────────────────────────
 
 async function init() {
-  renderHistory();
   try {
     const r = await fetch(API + '/api/profiles');
     const d = await r.json();
@@ -351,6 +351,7 @@ async function init() {
     document.getElementById('profileList').innerHTML =
       '<div style="font-size:12px;color:#c00;">Ошибка загрузки профилей</div>';
   }
+  await loadHistory();
 }
 
 function renderProfiles() {
@@ -424,6 +425,7 @@ async function onAudioFile(input) {
   prog.style.display = 'block';
   prog.textContent = '⏳ Транскрибирую запись...';
 
+  lastAudioFilename = file.name;
   const fd = new FormData();
   fd.append('file', file);
 
@@ -482,6 +484,8 @@ async function generate() {
         goal: selectedGoal,
         msg_type: 'email',
         include_notes: true,
+        context_type: isAudio ? 'audio' : 'text',
+        audio_filename: isAudio ? lastAudioFilename : '',
       }),
     });
     const d = await r.json();
@@ -499,8 +503,8 @@ async function generate() {
     result.classList.add('show');
     result.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-    // Save history
-    saveHistory(selectedProfile, task, d.message);
+    // Reload history from server
+    await loadHistory();
   } catch(e) {
     alert('Ошибка: ' + e.message);
   } finally {
@@ -520,19 +524,17 @@ function copyMsg() {
   });
 }
 
-// ─── History (localStorage) ────────────────────────────────────────────
+// ─── History (from server DB) ──────────────────────────────────────────
 
-function saveHistory(profileId, task, message) {
-  const name = profiles.find(p => p.id === profileId)?.display_name || profileId;
-  history.unshift({
-    date: new Date().toLocaleString('ru'),
-    name, task,
-    preview: message.substring(0, 80),
-    message
-  });
-  if (history.length > 20) history = history.slice(0, 20);
-  localStorage.setItem('vf_comm_history', JSON.stringify(history));
-  renderHistory();
+async function loadHistory() {
+  try {
+    const r = await fetch(API + '/api/communications?limit=20');
+    const d = await r.json();
+    history = d.communications || [];
+    renderHistory();
+  } catch(e) {
+    console.error('History load error:', e);
+  }
 }
 
 function renderHistory() {
@@ -541,21 +543,31 @@ function renderHistory() {
     el.innerHTML = '<div class="no-history">Пока пусто</div>';
     return;
   }
-  el.innerHTML = history.slice(0, 8).map((h, i) => `
-    <div class="history-item" onclick="loadHistory(${i})">
-      <div class="history-date">${h.date} · ${h.name}</div>
-      <div class="history-preview">${h.task || h.preview}</div>
-    </div>
-  `).join('');
+  el.innerHTML = history.slice(0, 10).map(h => {
+    const dt = h.created_at ? new Date(h.created_at).toLocaleString('ru', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    const icon = h.context_type === 'audio' ? '🎙' : '✉';
+    return `
+      <div class="history-item" onclick="loadHistoryItem(${h.id})">
+        <div class="history-date">${icon} ${dt} · ${h.profile_name || h.profile_id}</div>
+        <div class="history-preview">${h.task || h.preview || ''}</div>
+      </div>
+    `;
+  }).join('');
 }
 
-function loadHistory(idx) {
-  const h = history[idx];
-  if (!h) return;
-  document.getElementById('resultMsg').textContent = h.message;
-  document.getElementById('resultNotes').classList.remove('show');
-  document.getElementById('resultCard').classList.add('show');
-  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+async function loadHistoryItem(id) {
+  try {
+    const r = await fetch(API + `/api/communications/${id}`);
+    const d = await r.json();
+    document.getElementById('resultMsg').textContent = d.generated_message || '';
+    const notes = document.getElementById('resultNotes');
+    if (d.notes) { notes.textContent = d.notes; notes.classList.add('show'); }
+    else { notes.classList.remove('show'); }
+    document.getElementById('resultCard').classList.add('show');
+    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+  } catch(e) {
+    console.error('Load history item error:', e);
+  }
 }
 
 // ─── Start ──────────────────────────────────────────────────────────────
