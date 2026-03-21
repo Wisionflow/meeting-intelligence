@@ -5,401 +5,560 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VisionFlow — Коммуникации</title>
 <style>
+  :root {
+    --primary: #006699;
+    --primary-light: #e8f4fa;
+    --primary-dark: #004d73;
+    --bg: #f5f7fa;
+    --card: #fff;
+    --text: #1a1a1a;
+    --text-muted: #666;
+    --border: #e0e4e8;
+    --success: #2a9d2a;
+    --success-bg: #f0faf0;
+    --warn: #c48000;
+    --warn-bg: #fef8ec;
+    --radius: 10px;
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
+
   body {
     font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    font-size: 14px; line-height: 1.5; color: #1a1a1a;
-    background: #f5f7fa; min-height: 100vh;
+    font-size: 14px; line-height: 1.5; color: var(--text);
+    background: var(--bg); min-height: 100vh;
   }
 
+  /* ─── Header ─── */
   .header {
-    background: #006699; color: #fff; padding: 16px 24px;
-    display: flex; align-items: center; gap: 16px;
+    background: var(--primary); color: #fff;
+    padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
   }
-  .header h1 { font-size: 18px; font-weight: 600; }
-  .header .subtitle { font-size: 13px; opacity: 0.8; }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header h1 { font-size: 17px; font-weight: 600; letter-spacing: 0.3px; }
+  .header .subtitle { font-size: 12px; opacity: 0.75; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .user-badge {
+    background: rgba(255,255,255,0.15); padding: 4px 12px; border-radius: 16px;
+    font-size: 12px;
+  }
 
-  .container {
-    max-width: 900px; margin: 24px auto; padding: 0 16px;
-    display: flex; flex-direction: column; gap: 20px;
+  /* ─── Layout ─── */
+  .layout {
+    max-width: 1100px; margin: 0 auto; padding: 20px 16px;
+    display: grid; grid-template-columns: 280px 1fr; gap: 20px;
   }
+
+  @media (max-width: 768px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { order: 2; }
+  }
+
+  /* ─── Sidebar ─── */
+  .sidebar { display: flex; flex-direction: column; gap: 16px; }
 
   .card {
-    background: #fff; border-radius: 8px; padding: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    background: var(--card); border-radius: var(--radius); padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid var(--border);
   }
-  .card h2 {
-    font-size: 14px; color: #006699; margin-bottom: 12px;
-    text-transform: uppercase; letter-spacing: 0.5px;
+  .card-title {
+    font-size: 11px; font-weight: 700; color: var(--primary);
+    text-transform: uppercase; letter-spacing: 0.8px;
+    margin-bottom: 10px;
   }
 
-  label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; font-weight: 500; }
+  /* Profile card */
+  .profile-card { cursor: pointer; transition: all 0.15s; }
+  .profile-card:hover { border-color: var(--primary); }
+  .profile-card.selected { border-color: var(--primary); background: var(--primary-light); }
+  .profile-name { font-size: 14px; font-weight: 600; }
+  .profile-role { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
-  select, textarea, input[type="text"] {
-    width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px;
+  /* Guide tips */
+  .guide-panel {
+    max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
+  }
+  .guide-panel.open { max-height: 600px; overflow-y: auto; }
+  .guide-tip {
+    font-size: 12px; line-height: 1.5; padding: 6px 0;
+    border-bottom: 1px solid #f0f0f0; color: #444;
+  }
+  .guide-tip:last-child { border-bottom: none; }
+  .guide-tip strong { color: var(--primary-dark); }
+  .guide-toggle {
+    font-size: 12px; color: var(--primary); cursor: pointer;
+    margin-top: 8px; display: flex; align-items: center; gap: 4px;
+  }
+
+  /* ─── Main area ─── */
+  .main { display: flex; flex-direction: column; gap: 16px; }
+
+  /* Context input */
+  .context-tabs {
+    display: flex; gap: 0; margin-bottom: 10px;
+  }
+  .ctx-tab {
+    flex: 1; padding: 9px 0; text-align: center;
+    border: 1px solid var(--border); background: #fafafa;
+    cursor: pointer; font-size: 13px; font-weight: 500;
+    transition: all 0.15s;
+  }
+  .ctx-tab:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+  .ctx-tab:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+  .ctx-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  .ctx-content { display: none; }
+  .ctx-content.active { display: block; }
+
+  textarea {
+    width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px;
     font-size: 14px; font-family: inherit; resize: vertical;
-    transition: border-color 0.2s;
+    min-height: 140px; transition: border-color 0.2s;
   }
-  select:focus, textarea:focus, input:focus {
-    outline: none; border-color: #006699;
-  }
-  textarea { min-height: 120px; }
+  textarea:focus { outline: none; border-color: var(--primary); }
 
-  .row { display: flex; gap: 16px; margin-bottom: 12px; }
-  .row > div { flex: 1; }
-
-  .goal-pills {
-    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;
+  input[type="text"] {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 14px; font-family: inherit;
   }
-  .goal-pill {
-    padding: 6px 14px; border: 1px solid #ddd; border-radius: 20px;
-    font-size: 13px; cursor: pointer; background: #fff;
-    transition: all 0.2s;
-  }
-  .goal-pill:hover { border-color: #006699; color: #006699; }
-  .goal-pill.active { background: #006699; color: #fff; border-color: #006699; }
+  input:focus { outline: none; border-color: var(--primary); }
 
-  .btn {
-    padding: 12px 32px; background: #006699; color: #fff; border: none;
-    border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer;
+  label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; }
+
+  /* Upload */
+  .upload-zone {
+    border: 2px dashed var(--border); border-radius: 8px;
+    padding: 28px; text-align: center; cursor: pointer;
+    transition: all 0.2s; color: var(--text-muted);
+  }
+  .upload-zone:hover { border-color: var(--primary); color: var(--primary); }
+  .upload-zone.done { border-color: var(--success); background: var(--success-bg); color: var(--success); }
+  .upload-icon { font-size: 28px; margin-bottom: 4px; }
+  .upload-hint { font-size: 12px; }
+
+  /* Goal pills */
+  .goals { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .goal {
+    padding: 5px 14px; border: 1px solid var(--border); border-radius: 20px;
+    font-size: 12px; cursor: pointer; background: #fff; transition: all 0.15s;
+    user-select: none;
+  }
+  .goal:hover { border-color: var(--primary); color: var(--primary); }
+  .goal.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  /* Button */
+  .btn-generate {
+    width: 100%; padding: 13px; background: var(--primary); color: #fff; border: none;
+    border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
     transition: background 0.2s;
   }
-  .btn:hover { background: #005580; }
-  .btn:disabled { background: #99c2d6; cursor: not-allowed; }
+  .btn-generate:hover { background: var(--primary-dark); }
+  .btn-generate:disabled { background: #a0c4d8; cursor: not-allowed; }
 
-  .btn-secondary {
-    padding: 8px 20px; background: #f0f0f0; color: #333; border: 1px solid #ddd;
-    border-radius: 6px; font-size: 13px; cursor: pointer;
+  /* Loading */
+  .loading { text-align: center; padding: 20px; color: var(--text-muted); display: none; }
+  .loading.show { display: block; }
+  .loading-dots::after {
+    content: ''; animation: dots 1.5s steps(4, end) infinite;
   }
-  .btn-secondary:hover { background: #e0e0e0; }
+  @keyframes dots {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+  }
 
-  .result-area {
+  /* Result */
+  .result-card { display: none; }
+  .result-card.show { display: block; }
+
+  .result-message {
+    background: #f8faf8; border: 1px solid #c8dcc8; border-radius: 8px;
+    padding: 16px; font-size: 14px; line-height: 1.65;
+    white-space: pre-wrap; position: relative;
+  }
+
+  .result-notes {
+    background: var(--warn-bg); border: 1px solid #e8d8b0; border-radius: 8px;
+    padding: 12px; font-size: 12px; color: #7a6530; margin-top: 10px;
     display: none;
   }
-  .result-area.visible { display: block; }
+  .result-notes.show { display: block; }
 
-  .result-text {
-    background: #f8faf8; border: 1px solid #c0d8c0; border-radius: 6px;
-    padding: 16px; font-size: 14px; line-height: 1.6;
-    white-space: pre-wrap; min-height: 100px;
+  .result-actions {
+    display: flex; gap: 8px; margin-top: 10px; align-items: center;
   }
-
-  .notes-text {
-    background: #faf8f0; border: 1px solid #d8d0c0; border-radius: 6px;
-    padding: 12px; font-size: 13px; color: #666; margin-top: 12px;
+  .btn-action {
+    padding: 7px 16px; border: 1px solid var(--border); border-radius: 6px;
+    font-size: 13px; cursor: pointer; background: #fff; transition: all 0.15s;
   }
+  .btn-action:hover { background: #f0f0f0; }
+  .btn-action.copy { border-color: var(--success); color: var(--success); }
+  .btn-action.copy:hover { background: var(--success-bg); }
 
-  .actions { display: flex; gap: 12px; margin-top: 12px; align-items: center; }
-  .copied { color: #2a9d2a; font-size: 13px; opacity: 0; transition: opacity 0.3s; }
-  .copied.show { opacity: 1; }
-
-  .spinner {
-    display: none; text-align: center; padding: 20px; color: #666;
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #333; color: #fff; padding: 10px 24px; border-radius: 8px;
+    font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none;
   }
-  .spinner.visible { display: block; }
+  .toast.show { opacity: 1; }
 
-  .guide-preview {
-    background: #f0f4f8; border-radius: 6px; padding: 12px;
-    font-size: 13px; color: #444; margin-top: 8px;
-    max-height: 200px; overflow-y: auto; display: none;
+  /* History */
+  .history-item {
+    padding: 8px 0; border-bottom: 1px solid #f0f0f0;
+    cursor: pointer; font-size: 12px;
   }
-  .guide-preview.visible { display: block; }
-
-  .upload-area {
-    border: 2px dashed #ddd; border-radius: 8px; padding: 24px;
-    text-align: center; cursor: pointer; transition: border-color 0.2s;
-    margin-bottom: 12px;
-  }
-  .upload-area:hover { border-color: #006699; }
-  .upload-area.has-file { border-color: #2a9d2a; background: #f8faf8; }
-
-  .file-info { font-size: 13px; color: #666; margin-top: 4px; }
-
-  .tabs {
-    display: flex; gap: 0; margin-bottom: 12px;
-  }
-  .tab {
-    padding: 8px 20px; border: 1px solid #ddd; background: #f5f5f5;
-    cursor: pointer; font-size: 13px; font-weight: 500;
-  }
-  .tab:first-child { border-radius: 6px 0 0 6px; }
-  .tab:last-child { border-radius: 0 6px 6px 0; }
-  .tab.active { background: #006699; color: #fff; border-color: #006699; }
-
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
+  .history-item:hover { color: var(--primary); }
+  .history-item:last-child { border-bottom: none; }
+  .history-date { color: var(--text-muted); font-size: 11px; }
+  .history-preview { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .no-history { font-size: 12px; color: #aaa; text-align: center; padding: 12px; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div>
-    <h1>VisionFlow</h1>
-    <div class="subtitle">Коммуникационный ассистент</div>
+  <div class="header-left">
+    <div>
+      <h1>VisionFlow</h1>
+      <div class="subtitle">Коммуникационный ассистент</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="user-badge" id="userBadge"></div>
   </div>
 </div>
 
-<div class="container">
+<div class="layout">
 
-  <!-- Step 1: Recipient -->
-  <div class="card">
-    <h2>1. Кому пишем</h2>
-    <select id="recipient" onchange="onRecipientChange()">
-      <option value="">Выберите получателя...</option>
-    </select>
-    <div id="guidePreview" class="guide-preview"></div>
-  </div>
+  <!-- ─── Sidebar ─── -->
+  <div class="sidebar">
 
-  <!-- Step 2: Context -->
-  <div class="card">
-    <h2>2. Контекст</h2>
-
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('text')">Текст переписки</div>
-      <div class="tab" onclick="switchTab('audio')">Аудио записи</div>
-    </div>
-
-    <div id="tab-text" class="tab-content active">
-      <label>Вставьте переписку или опишите ситуацию</label>
-      <textarea id="contextText" placeholder="Скопируйте сюда переписку из почты или чата..."></textarea>
-    </div>
-
-    <div id="tab-audio" class="tab-content">
-      <div id="uploadArea" class="upload-area" onclick="document.getElementById('audioFile').click()">
-        <div>📎 Нажмите чтобы загрузить аудио записи разговора</div>
-        <div class="file-info">m4a, mp3, wav, ogg — до 25 МБ</div>
+    <!-- Recipients -->
+    <div class="card">
+      <div class="card-title">Кому пишем</div>
+      <div id="profileList">
+        <div style="font-size:12px; color:#aaa;">Загрузка...</div>
       </div>
-      <input type="file" id="audioFile" accept=".m4a,.mp3,.wav,.ogg,.flac,.aac,.wma,.webm" style="display:none" onchange="onFileSelected(this)">
-      <div id="audioStatus" style="display:none; font-size:13px; color:#666; margin-top:8px;"></div>
-      <div id="transcriptResult" style="display:none;">
-        <label>Расшифровка разговора</label>
-        <textarea id="transcriptText" style="min-height:150px;" readonly></textarea>
+    </div>
+
+    <!-- Guide -->
+    <div class="card" id="guideCard" style="display:none;">
+      <div class="card-title">Как общаться с <span id="guideName"></span></div>
+      <div id="guideContent" class="guide-panel open"></div>
+    </div>
+
+    <!-- History -->
+    <div class="card">
+      <div class="card-title">История</div>
+      <div id="historyList">
+        <div class="no-history">Пока пусто</div>
       </div>
     </div>
   </div>
 
-  <!-- Step 3: Task -->
-  <div class="card">
-    <h2>3. Что нужно сделать</h2>
-    <label>Ваша задача</label>
-    <input type="text" id="task" placeholder="Например: ответить на его вопрос про сроки поставки">
+  <!-- ─── Main ─── -->
+  <div class="main">
 
-    <label style="margin-top:12px;">Цель сообщения</label>
-    <div class="goal-pills">
-      <div class="goal-pill active" data-goal="respond" onclick="selectGoal(this)">Ответить</div>
-      <div class="goal-pill" data-goal="request" onclick="selectGoal(this)">Попросить</div>
-      <div class="goal-pill" data-goal="persuade" onclick="selectGoal(this)">Убедить</div>
-      <div class="goal-pill" data-goal="inform" onclick="selectGoal(this)">Проинформировать</div>
-      <div class="goal-pill" data-goal="escalate" onclick="selectGoal(this)">Эскалировать</div>
+    <!-- Context -->
+    <div class="card">
+      <div class="card-title">Контекст</div>
+
+      <div class="context-tabs">
+        <div class="ctx-tab active" onclick="switchCtx('text')">Переписка</div>
+        <div class="ctx-tab" onclick="switchCtx('audio')">Запись разговора</div>
+      </div>
+
+      <div id="ctx-text" class="ctx-content active">
+        <textarea id="contextText" placeholder="Вставьте переписку из почты или чата. Можно скопировать всю цепочку писем целиком — система разберётся."></textarea>
+      </div>
+
+      <div id="ctx-audio" class="ctx-content">
+        <div id="uploadZone" class="upload-zone" onclick="document.getElementById('audioFile').click()">
+          <div class="upload-icon">🎙</div>
+          <div>Загрузить запись разговора</div>
+          <div class="upload-hint">m4a, mp3, wav — до 25 МБ</div>
+        </div>
+        <input type="file" id="audioFile" accept=".m4a,.mp3,.wav,.ogg,.flac,.aac,.wma,.webm" style="display:none" onchange="onAudioFile(this)">
+        <div id="audioProgress" style="display:none; font-size:12px; color:var(--text-muted); margin-top:8px;"></div>
+        <div id="transcriptBox" style="display:none; margin-top:10px;">
+          <label>Расшифровка</label>
+          <textarea id="transcriptText" style="min-height:120px; font-size:13px; background:#fafafa;" readonly></textarea>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <!-- Generate button -->
-  <div style="text-align:center;">
-    <button class="btn" id="generateBtn" onclick="generate()">Подготовить сообщение</button>
-  </div>
+    <!-- Task -->
+    <div class="card">
+      <div class="card-title">Задача</div>
+      <label>Что нужно написать</label>
+      <input type="text" id="taskInput" placeholder="Например: ответить на его возражение по срокам отгрузки">
 
-  <!-- Spinner -->
-  <div id="spinner" class="spinner">
-    ⏳ Адаптирую сообщение под профиль получателя...
-  </div>
-
-  <!-- Result -->
-  <div id="resultArea" class="card result-area">
-    <h2>Адаптированное сообщение</h2>
-    <div id="resultText" class="result-text"></div>
-    <div id="resultNotes" class="notes-text" style="display:none;"></div>
-    <div class="actions">
-      <button class="btn-secondary" onclick="copyResult()">📋 Скопировать</button>
-      <button class="btn-secondary" onclick="regenerate()">🔄 Перегенерировать</button>
-      <span id="copiedLabel" class="copied">Скопировано!</span>
+      <label style="margin-top:10px;">Цель</label>
+      <div class="goals">
+        <div class="goal active" data-g="respond" onclick="pickGoal(this)">Ответить</div>
+        <div class="goal" data-g="request" onclick="pickGoal(this)">Попросить</div>
+        <div class="goal" data-g="persuade" onclick="pickGoal(this)">Убедить</div>
+        <div class="goal" data-g="inform" onclick="pickGoal(this)">Проинформировать</div>
+        <div class="goal" data-g="deescalate" onclick="pickGoal(this)">Снизить напряжение</div>
+      </div>
     </div>
-  </div>
 
+    <!-- Generate -->
+    <button class="btn-generate" id="btnGen" onclick="generate()">
+      Подготовить сообщение
+    </button>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+      ⏳ Адаптирую под профиль получателя<span class="loading-dots"></span>
+    </div>
+
+    <!-- Result -->
+    <div class="card result-card" id="resultCard">
+      <div class="card-title">Готово — скопируйте и отправьте</div>
+      <div class="result-message" id="resultMsg"></div>
+      <div class="result-notes" id="resultNotes"></div>
+      <div class="result-actions">
+        <button class="btn-action copy" onclick="copyMsg()">📋 Скопировать</button>
+        <button class="btn-action" onclick="generate()">🔄 Другой вариант</button>
+      </div>
+    </div>
+
+  </div>
 </div>
+
+<div class="toast" id="toast">Скопировано</div>
 
 <script>
-const API = '';  // same origin
-
+const API = '';
+let selectedProfile = null;
 let selectedGoal = 'respond';
 let profiles = [];
-let currentGuide = '';
+let history = JSON.parse(localStorage.getItem('vf_comm_history') || '[]');
 
-// ─── Init ───────────────────────────────────────────────────────────────────
+// ─── Init ───────────────────────────────────────────────────────────────
 
 async function init() {
+  renderHistory();
   try {
-    const resp = await fetch(API + '/api/profiles');
-    const data = await resp.json();
-    profiles = data.profiles || [];
-
-    const sel = document.getElementById('recipient');
-    profiles.forEach(p => {
-      const opt = document.createElement('option');
-      opt.value = p.id;
-      opt.textContent = p.display_name + (p.role ? ` — ${p.role}` : '');
-      sel.appendChild(opt);
-    });
-  } catch (e) {
-    console.error('Failed to load profiles:', e);
+    const r = await fetch(API + '/api/profiles');
+    const d = await r.json();
+    profiles = d.profiles || [];
+    renderProfiles();
+    if (profiles.length === 1) selectProfile(profiles[0].id);
+  } catch(e) {
+    document.getElementById('profileList').innerHTML =
+      '<div style="font-size:12px;color:#c00;">Ошибка загрузки профилей</div>';
   }
 }
 
-// ─── Tabs ───────────────────────────────────────────────────────────────────
-
-function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelector(`.tab-content#tab-${tab}`).classList.add('active');
-  document.querySelectorAll('.tab')[tab === 'text' ? 0 : 1].classList.add('active');
-}
-
-// ─── Recipient ──────────────────────────────────────────────────────────────
-
-async function onRecipientChange() {
-  const id = document.getElementById('recipient').value;
-  const preview = document.getElementById('guidePreview');
-  if (!id) {
-    preview.classList.remove('visible');
-    currentGuide = '';
+function renderProfiles() {
+  const el = document.getElementById('profileList');
+  if (!profiles.length) {
+    el.innerHTML = '<div style="font-size:12px;color:#aaa;">Нет доступных профилей</div>';
     return;
   }
+  el.innerHTML = profiles.map(p => `
+    <div class="profile-card card" id="pc-${p.id}" onclick="selectProfile('${p.id}')"
+         style="margin-bottom:8px; padding:10px 12px;">
+      <div class="profile-name">${p.display_name}</div>
+      ${p.role ? `<div class="profile-role">${p.role}</div>` : ''}
+    </div>
+  `).join('');
+}
 
+async function selectProfile(id) {
+  selectedProfile = id;
+  document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById('pc-' + id);
+  if (card) card.classList.add('selected');
+
+  // Load guide
   try {
-    const resp = await fetch(API + `/api/profiles/${id}/guide`);
-    const data = await resp.json();
-    currentGuide = data.guide || '';
-    if (currentGuide) {
-      preview.textContent = currentGuide.substring(0, 500) + (currentGuide.length > 500 ? '...' : '');
-      preview.classList.add('visible');
+    const r = await fetch(API + `/api/profiles/${id}/guide`);
+    const d = await r.json();
+    if (d.guide) {
+      showGuide(d.display_name, d.guide);
     }
-  } catch (e) {
-    preview.classList.remove('visible');
-  }
+  } catch(e) {}
 }
 
-// ─── Goal ───────────────────────────────────────────────────────────────────
+function showGuide(name, guideText) {
+  document.getElementById('guideName').textContent = name;
+  const gc = document.getElementById('guideCard');
+  gc.style.display = 'block';
 
-function selectGoal(el) {
-  document.querySelectorAll('.goal-pill').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  selectedGoal = el.dataset.goal;
+  // Parse guide into tips
+  const lines = guideText.split('\n').filter(l => l.trim().startsWith('- **'));
+  const tips = lines.map(l => {
+    const clean = l.replace(/^-\s*/, '').trim();
+    return `<div class="guide-tip">${clean}</div>`;
+  });
+
+  document.getElementById('guideContent').innerHTML =
+    tips.slice(0, 8).join('') || '<div class="guide-tip">Руководство загружено</div>';
 }
 
-// ─── Audio upload ───────────────────────────────────────────────────────────
+// ─── Tabs ───────────────────────────────────────────────────────────────
 
-async function onFileSelected(input) {
+function switchCtx(tab) {
+  document.querySelectorAll('.ctx-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.ctx-content').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.ctx-content#ctx-${tab}`).classList.add('active');
+  document.querySelectorAll('.ctx-tab')[tab === 'text' ? 0 : 1].classList.add('active');
+}
+
+// ─── Audio ──────────────────────────────────────────────────────────────
+
+async function onAudioFile(input) {
   const file = input.files[0];
   if (!file) return;
 
-  const area = document.getElementById('uploadArea');
-  area.classList.add('has-file');
-  area.innerHTML = `<div>✓ ${file.name} (${(file.size/1024/1024).toFixed(1)} МБ)</div>`;
+  const zone = document.getElementById('uploadZone');
+  zone.classList.add('done');
+  zone.innerHTML = `<div class="upload-icon">✓</div><div>${file.name}</div>
+    <div class="upload-hint">${(file.size/1024/1024).toFixed(1)} МБ</div>`;
 
-  const status = document.getElementById('audioStatus');
-  status.style.display = 'block';
-  status.textContent = '⏳ Транскрибирую запись...';
+  const prog = document.getElementById('audioProgress');
+  prog.style.display = 'block';
+  prog.textContent = '⏳ Транскрибирую запись...';
 
-  const formData = new FormData();
-  formData.append('file', file);
+  const fd = new FormData();
+  fd.append('file', file);
 
   try {
-    const resp = await fetch(API + '/api/communicate/transcribe', {
-      method: 'POST',
-      body: formData,
-    });
-    const data = await resp.json();
-
-    if (data.transcript) {
-      status.textContent = `✓ Транскрибировано (${Math.round(data.duration || 0)} сек)`;
-      document.getElementById('transcriptText').value = data.transcript;
-      document.getElementById('transcriptResult').style.display = 'block';
+    const r = await fetch(API + '/api/communicate/transcribe', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.transcript) {
+      prog.textContent = `✓ Расшифровано (${Math.round(d.duration || 0)} сек)`;
+      document.getElementById('transcriptText').value = d.transcript;
+      document.getElementById('transcriptBox').style.display = 'block';
     } else {
-      status.textContent = '✗ Ошибка: ' + (data.error || 'неизвестная');
+      prog.textContent = '✗ ' + (d.detail || d.error || 'Ошибка');
     }
-  } catch (e) {
-    status.textContent = '✗ Ошибка загрузки: ' + e.message;
+  } catch(e) {
+    prog.textContent = '✗ ' + e.message;
   }
 }
 
-// ─── Generate ───────────────────────────────────────────────────────────────
+// ─── Goal ───────────────────────────────────────────────────────────────
+
+function pickGoal(el) {
+  document.querySelectorAll('.goal').forEach(g => g.classList.remove('active'));
+  el.classList.add('active');
+  selectedGoal = el.dataset.g;
+}
+
+// ─── Generate ───────────────────────────────────────────────────────────
 
 async function generate() {
-  const recipientId = document.getElementById('recipient').value;
-  if (!recipientId) { alert('Выберите получателя'); return; }
+  if (!selectedProfile) { alert('Выберите получателя слева'); return; }
 
-  // Get context from active tab
-  const isAudio = document.querySelector('#tab-audio.active');
-  let context;
-  if (isAudio) {
-    context = document.getElementById('transcriptText').value;
-  } else {
-    context = document.getElementById('contextText').value;
-  }
-  if (!context.trim()) { alert('Введите контекст (переписку или загрузите аудио)'); return; }
+  const isAudio = document.querySelector('#ctx-audio.active');
+  const context = isAudio
+    ? document.getElementById('transcriptText').value
+    : document.getElementById('contextText').value;
 
-  const task = document.getElementById('task').value || 'ответить на сообщение';
+  if (!context.trim()) { alert('Введите контекст переписки или загрузите аудио'); return; }
 
-  const btn = document.getElementById('generateBtn');
-  const spinner = document.getElementById('spinner');
-  const resultArea = document.getElementById('resultArea');
+  const task = document.getElementById('taskInput').value || 'ответить на сообщение';
+
+  const btn = document.getElementById('btnGen');
+  const loading = document.getElementById('loading');
+  const result = document.getElementById('resultCard');
 
   btn.disabled = true;
-  spinner.classList.add('visible');
-  resultArea.classList.remove('visible');
+  loading.classList.add('show');
+  result.classList.remove('show');
 
   try {
-    const resp = await fetch(API + '/api/communicate', {
+    const r = await fetch(API + '/api/communicate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        profile_id: recipientId,
-        context: context,
-        task: task,
+        profile_id: selectedProfile,
+        context, task,
         goal: selectedGoal,
         msg_type: 'email',
         include_notes: true,
       }),
     });
+    const d = await r.json();
 
-    const data = await resp.json();
+    document.getElementById('resultMsg').textContent = d.message || 'Ошибка';
 
-    document.getElementById('resultText').textContent = data.message || 'Ошибка генерации';
-
-    const notesEl = document.getElementById('resultNotes');
-    if (data.notes) {
-      notesEl.textContent = data.notes;
-      notesEl.style.display = 'block';
+    const notes = document.getElementById('resultNotes');
+    if (d.notes) {
+      notes.textContent = d.notes;
+      notes.classList.add('show');
     } else {
-      notesEl.style.display = 'none';
+      notes.classList.remove('show');
     }
 
-    resultArea.classList.add('visible');
-    resultArea.scrollIntoView({ behavior: 'smooth' });
-  } catch (e) {
+    result.classList.add('show');
+    result.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Save history
+    saveHistory(selectedProfile, task, d.message);
+  } catch(e) {
     alert('Ошибка: ' + e.message);
   } finally {
     btn.disabled = false;
-    spinner.classList.remove('visible');
+    loading.classList.remove('show');
   }
 }
 
-function regenerate() {
-  generate();
-}
+// ─── Copy ───────────────────────────────────────────────────────────────
 
-// ─── Copy ───────────────────────────────────────────────────────────────────
-
-function copyResult() {
-  const text = document.getElementById('resultText').textContent;
+function copyMsg() {
+  const text = document.getElementById('resultMsg').textContent;
   navigator.clipboard.writeText(text).then(() => {
-    const label = document.getElementById('copiedLabel');
-    label.classList.add('show');
-    setTimeout(() => label.classList.remove('show'), 2000);
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
   });
 }
 
-// ─── Start ──────────────────────────────────────────────────────────────────
+// ─── History (localStorage) ────────────────────────────────────────────
+
+function saveHistory(profileId, task, message) {
+  const name = profiles.find(p => p.id === profileId)?.display_name || profileId;
+  history.unshift({
+    date: new Date().toLocaleString('ru'),
+    name, task,
+    preview: message.substring(0, 80),
+    message
+  });
+  if (history.length > 20) history = history.slice(0, 20);
+  localStorage.setItem('vf_comm_history', JSON.stringify(history));
+  renderHistory();
+}
+
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  if (!history.length) {
+    el.innerHTML = '<div class="no-history">Пока пусто</div>';
+    return;
+  }
+  el.innerHTML = history.slice(0, 8).map((h, i) => `
+    <div class="history-item" onclick="loadHistory(${i})">
+      <div class="history-date">${h.date} · ${h.name}</div>
+      <div class="history-preview">${h.task || h.preview}</div>
+    </div>
+  `).join('');
+}
+
+function loadHistory(idx) {
+  const h = history[idx];
+  if (!h) return;
+  document.getElementById('resultMsg').textContent = h.message;
+  document.getElementById('resultNotes').classList.remove('show');
+  document.getElementById('resultCard').classList.add('show');
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ─── Start ──────────────────────────────────────────────────────────────
 init();
 </script>
 
