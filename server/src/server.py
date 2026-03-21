@@ -1,22 +1,34 @@
-"""Meeting Intelligence — FastAPI server.
+"""VisionFlow — FastAPI server.
 
 Endpoints:
-  POST /api/meetings/upload  — upload audio file, process async
-  GET  /api/meetings          — list all meetings
-  GET  /api/meetings/{id}     — meeting details + analysis
-  GET  /api/meetings/{id}/report — HTML report (download)
-  GET  /health                — healthcheck
+  Meetings:
+    POST /api/meetings/upload       — upload audio file, process async
+    GET  /api/meetings              — list all meetings
+    GET  /api/meetings/{id}         — meeting details + analysis
+    GET  /api/meetings/{id}/report  — HTML report
+
+  Communication Assistant:
+    GET  /api/profiles              — list available profiles
+    GET  /api/profiles/{id}/guide   — communication guide for person
+    POST /api/communicate           — adapt message for recipient
+    POST /api/communicate/transcribe — transcribe audio for context
+
+  Pages:
+    GET  /communicate               — communication assistant UI
+    GET  /health                    — healthcheck
 """
 
 import asyncio
+import json
 import logging
 import os
 import shutil
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Form
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from pydantic import BaseModel
 
 from src import config
 from src.transcriber import transcribe, format_transcript
@@ -26,6 +38,8 @@ from src.storage import (
     list_meetings, count_meetings, save_processing_status, update_meeting_status,
 )
 from src.report import generate_html_report
+from src.communicator import adapt_message
+from src.profiles import list_profiles, get_guide, setup_tables as setup_profile_tables
 
 logging.basicConfig(
     level=logging.INFO,
@@ -44,7 +58,8 @@ app = FastAPI(
 async def startup():
     os.makedirs(config.UPLOAD_DIR, exist_ok=True)
     await get_pool()
-    log.info("Meeting Intelligence server started on :%d", config.PORT)
+    await setup_profile_tables()
+    log.info("VisionFlow server started on :%d", config.PORT)
 
 
 @app.on_event("shutdown")
@@ -197,6 +212,96 @@ async def api_get_report(meeting_id: int):
         created_at=m.get("created_at"),
     )
     return HTMLResponse(html)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# COMMUNICATION ASSISTANT
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ─── UI page ────────────────────────────────────────────────────────────────
+
+@app.get("/communicate", response_class=HTMLResponse)
+async def communicate_page():
+    html_path = Path(config.TEMPLATES_DIR) / "communicate.html"
+    if not html_path.exists():
+        raise HTTPException(404, "Communication page not found")
+    return HTMLResponse(html_path.read_text(encoding="utf-8"))
+
+
+# ─── Profiles ───────────────────────────────────────────────────────────────
+
+@app.get("/api/profiles")
+async def api_list_profiles(user_id: str | None = None):
+    profiles = await list_profiles(user_id)
+    return {"profiles": profiles}
+
+
+@app.get("/api/profiles/{profile_id}/guide")
+async def api_get_guide(profile_id: str, user_id: str | None = None):
+    data = await get_guide(profile_id, user_id)
+    if not data:
+        raise HTTPException(404, "Profile not found or access denied")
+    return data
+
+
+# ─── Communicate ────────────────────────────────────────────────────────────
+
+class CommunicateRequest(BaseModel):
+    profile_id: str
+    context: str
+    task: str = "ответить на сообщение"
+    goal: str = "respond"
+    msg_type: str = "email"
+    include_notes: bool = False
+
+
+@app.post("/api/communicate")
+async def api_communicate(req: CommunicateRequest):
+    guide_data = await get_guide(req.profile_id)
+    if not guide_data:
+        raise HTTPException(404, f"Profile '{req.profile_id}' not found")
+
+    guide_text = guide_data.get("guide", "")
+    if not guide_text:
+        raise HTTPException(400, f"No communication guide for '{req.profile_id}'")
+
+    result = await adapt_message(
+        guide=guide_text,
+        context=req.context,
+        task=req.task,
+        goal=req.goal,
+        msg_type=req.msg_type,
+        include_notes=req.include_notes,
+    )
+    return result
+
+
+# ─── Transcribe audio for context ───────────────────────────────────────────
+
+@app.post("/api/communicate/transcribe")
+async def api_transcribe_for_context(file: UploadFile = File(...)):
+    """Transcribe audio file and return text for communication context."""
+    ext = Path(file.filename).suffix.lower()
+    if ext not in config.AUDIO_EXTENSIONS:
+        raise HTTPException(400, f"Unsupported format: {ext}")
+
+    upload_path = Path(config.UPLOAD_DIR) / f"ctx_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}"
+    with open(upload_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    try:
+        result = await transcribe(str(upload_path))
+        formatted = format_transcript(result["segments"])
+        return {
+            "transcript": formatted,
+            "text": result["text"],
+            "duration": result["duration"],
+            "language": result["language"],
+        }
+    except Exception as e:
+        raise HTTPException(500, f"Transcription error: {e}")
+    finally:
+        upload_path.unlink(missing_ok=True)
 
 
 # ─── Entry point ────────────────────────────────────────────────────────────

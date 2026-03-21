@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VisionFlow — Коммуникации</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px; line-height: 1.5; color: #1a1a1a;
+    background: #f5f7fa; min-height: 100vh;
+  }
+
+  .header {
+    background: #006699; color: #fff; padding: 16px 24px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .header h1 { font-size: 18px; font-weight: 600; }
+  .header .subtitle { font-size: 13px; opacity: 0.8; }
+
+  .container {
+    max-width: 900px; margin: 24px auto; padding: 0 16px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+
+  .card {
+    background: #fff; border-radius: 8px; padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .card h2 {
+    font-size: 14px; color: #006699; margin-bottom: 12px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; font-weight: 500; }
+
+  select, textarea, input[type="text"] {
+    width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px;
+    font-size: 14px; font-family: inherit; resize: vertical;
+    transition: border-color 0.2s;
+  }
+  select:focus, textarea:focus, input:focus {
+    outline: none; border-color: #006699;
+  }
+  textarea { min-height: 120px; }
+
+  .row { display: flex; gap: 16px; margin-bottom: 12px; }
+  .row > div { flex: 1; }
+
+  .goal-pills {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;
+  }
+  .goal-pill {
+    padding: 6px 14px; border: 1px solid #ddd; border-radius: 20px;
+    font-size: 13px; cursor: pointer; background: #fff;
+    transition: all 0.2s;
+  }
+  .goal-pill:hover { border-color: #006699; color: #006699; }
+  .goal-pill.active { background: #006699; color: #fff; border-color: #006699; }
+
+  .btn {
+    padding: 12px 32px; background: #006699; color: #fff; border: none;
+    border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn:hover { background: #005580; }
+  .btn:disabled { background: #99c2d6; cursor: not-allowed; }
+
+  .btn-secondary {
+    padding: 8px 20px; background: #f0f0f0; color: #333; border: 1px solid #ddd;
+    border-radius: 6px; font-size: 13px; cursor: pointer;
+  }
+  .btn-secondary:hover { background: #e0e0e0; }
+
+  .result-area {
+    display: none;
+  }
+  .result-area.visible { display: block; }
+
+  .result-text {
+    background: #f8faf8; border: 1px solid #c0d8c0; border-radius: 6px;
+    padding: 16px; font-size: 14px; line-height: 1.6;
+    white-space: pre-wrap; min-height: 100px;
+  }
+
+  .notes-text {
+    background: #faf8f0; border: 1px solid #d8d0c0; border-radius: 6px;
+    padding: 12px; font-size: 13px; color: #666; margin-top: 12px;
+  }
+
+  .actions { display: flex; gap: 12px; margin-top: 12px; align-items: center; }
+  .copied { color: #2a9d2a; font-size: 13px; opacity: 0; transition: opacity 0.3s; }
+  .copied.show { opacity: 1; }
+
+  .spinner {
+    display: none; text-align: center; padding: 20px; color: #666;
+  }
+  .spinner.visible { display: block; }
+
+  .guide-preview {
+    background: #f0f4f8; border-radius: 6px; padding: 12px;
+    font-size: 13px; color: #444; margin-top: 8px;
+    max-height: 200px; overflow-y: auto; display: none;
+  }
+  .guide-preview.visible { display: block; }
+
+  .upload-area {
+    border: 2px dashed #ddd; border-radius: 8px; padding: 24px;
+    text-align: center; cursor: pointer; transition: border-color 0.2s;
+    margin-bottom: 12px;
+  }
+  .upload-area:hover { border-color: #006699; }
+  .upload-area.has-file { border-color: #2a9d2a; background: #f8faf8; }
+
+  .file-info { font-size: 13px; color: #666; margin-top: 4px; }
+
+  .tabs {
+    display: flex; gap: 0; margin-bottom: 12px;
+  }
+  .tab {
+    padding: 8px 20px; border: 1px solid #ddd; background: #f5f5f5;
+    cursor: pointer; font-size: 13px; font-weight: 500;
+  }
+  .tab:first-child { border-radius: 6px 0 0 6px; }
+  .tab:last-child { border-radius: 0 6px 6px 0; }
+  .tab.active { background: #006699; color: #fff; border-color: #006699; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>VisionFlow</h1>
+    <div class="subtitle">Коммуникационный ассистент</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Step 1: Recipient -->
+  <div class="card">
+    <h2>1. Кому пишем</h2>
+    <select id="recipient" onchange="onRecipientChange()">
+      <option value="">Выберите получателя...</option>
+    </select>
+    <div id="guidePreview" class="guide-preview"></div>
+  </div>
+
+  <!-- Step 2: Context -->
+  <div class="card">
+    <h2>2. Контекст</h2>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('text')">Текст переписки</div>
+      <div class="tab" onclick="switchTab('audio')">Аудио записи</div>
+    </div>
+
+    <div id="tab-text" class="tab-content active">
+      <label>Вставьте переписку или опишите ситуацию</label>
+      <textarea id="contextText" placeholder="Скопируйте сюда переписку из почты или чата..."></textarea>
+    </div>
+
+    <div id="tab-audio" class="tab-content">
+      <div id="uploadArea" class="upload-area" onclick="document.getElementById('audioFile').click()">
+        <div>📎 Нажмите чтобы загрузить аудио записи разговора</div>
+        <div class="file-info">m4a, mp3, wav, ogg — до 25 МБ</div>
+      </div>
+      <input type="file" id="audioFile" accept=".m4a,.mp3,.wav,.ogg,.flac,.aac,.wma,.webm" style="display:none" onchange="onFileSelected(this)">
+      <div id="audioStatus" style="display:none; font-size:13px; color:#666; margin-top:8px;"></div>
+      <div id="transcriptResult" style="display:none;">
+        <label>Расшифровка разговора</label>
+        <textarea id="transcriptText" style="min-height:150px;" readonly></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Task -->
+  <div class="card">
+    <h2>3. Что нужно сделать</h2>
+    <label>Ваша задача</label>
+    <input type="text" id="task" placeholder="Например: ответить на его вопрос про сроки поставки">
+
+    <label style="margin-top:12px;">Цель сообщения</label>
+    <div class="goal-pills">
+      <div class="goal-pill active" data-goal="respond" onclick="selectGoal(this)">Ответить</div>
+      <div class="goal-pill" data-goal="request" onclick="selectGoal(this)">Попросить</div>
+      <div class="goal-pill" data-goal="persuade" onclick="selectGoal(this)">Убедить</div>
+      <div class="goal-pill" data-goal="inform" onclick="selectGoal(this)">Проинформировать</div>
+      <div class="goal-pill" data-goal="escalate" onclick="selectGoal(this)">Эскалировать</div>
+    </div>
+  </div>
+
+  <!-- Generate button -->
+  <div style="text-align:center;">
+    <button class="btn" id="generateBtn" onclick="generate()">Подготовить сообщение</button>
+  </div>
+
+  <!-- Spinner -->
+  <div id="spinner" class="spinner">
+    ⏳ Адаптирую сообщение под профиль получателя...
+  </div>
+
+  <!-- Result -->
+  <div id="resultArea" class="card result-area">
+    <h2>Адаптированное сообщение</h2>
+    <div id="resultText" class="result-text"></div>
+    <div id="resultNotes" class="notes-text" style="display:none;"></div>
+    <div class="actions">
+      <button class="btn-secondary" onclick="copyResult()">📋 Скопировать</button>
+      <button class="btn-secondary" onclick="regenerate()">🔄 Перегенерировать</button>
+      <span id="copiedLabel" class="copied">Скопировано!</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = '';  // same origin
+
+let selectedGoal = 'respond';
+let profiles = [];
+let currentGuide = '';
+
+// ─── Init ───────────────────────────────────────────────────────────────────
+
+async function init() {
+  try {
+    const resp = await fetch(API + '/api/profiles');
+    const data = await resp.json();
+    profiles = data.profiles || [];
+
+    const sel = document.getElementById('recipient');
+    profiles.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.display_name + (p.role ? ` — ${p.role}` : '');
+      sel.appendChild(opt);
+    });
+  } catch (e) {
+    console.error('Failed to load profiles:', e);
+  }
+}
+
+// ─── Tabs ───────────────────────────────────────────────────────────────────
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab-content#tab-${tab}`).classList.add('active');
+  document.querySelectorAll('.tab')[tab === 'text' ? 0 : 1].classList.add('active');
+}
+
+// ─── Recipient ──────────────────────────────────────────────────────────────
+
+async function onRecipientChange() {
+  const id = document.getElementById('recipient').value;
+  const preview = document.getElementById('guidePreview');
+  if (!id) {
+    preview.classList.remove('visible');
+    currentGuide = '';
+    return;
+  }
+
+  try {
+    const resp = await fetch(API + `/api/profiles/${id}/guide`);
+    const data = await resp.json();
+    currentGuide = data.guide || '';
+    if (currentGuide) {
+      preview.textContent = currentGuide.substring(0, 500) + (currentGuide.length > 500 ? '...' : '');
+      preview.classList.add('visible');
+    }
+  } catch (e) {
+    preview.classList.remove('visible');
+  }
+}
+
+// ─── Goal ───────────────────────────────────────────────────────────────────
+
+function selectGoal(el) {
+  document.querySelectorAll('.goal-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  selectedGoal = el.dataset.goal;
+}
+
+// ─── Audio upload ───────────────────────────────────────────────────────────
+
+async function onFileSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const area = document.getElementById('uploadArea');
+  area.classList.add('has-file');
+  area.innerHTML = `<div>✓ ${file.name} (${(file.size/1024/1024).toFixed(1)} МБ)</div>`;
+
+  const status = document.getElementById('audioStatus');
+  status.style.display = 'block';
+  status.textContent = '⏳ Транскрибирую запись...';
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const resp = await fetch(API + '/api/communicate/transcribe', {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await resp.json();
+
+    if (data.transcript) {
+      status.textContent = `✓ Транскрибировано (${Math.round(data.duration || 0)} сек)`;
+      document.getElementById('transcriptText').value = data.transcript;
+      document.getElementById('transcriptResult').style.display = 'block';
+    } else {
+      status.textContent = '✗ Ошибка: ' + (data.error || 'неизвестная');
+    }
+  } catch (e) {
+    status.textContent = '✗ Ошибка загрузки: ' + e.message;
+  }
+}
+
+// ─── Generate ───────────────────────────────────────────────────────────────
+
+async function generate() {
+  const recipientId = document.getElementById('recipient').value;
+  if (!recipientId) { alert('Выберите получателя'); return; }
+
+  // Get context from active tab
+  const isAudio = document.querySelector('#tab-audio.active');
+  let context;
+  if (isAudio) {
+    context = document.getElementById('transcriptText').value;
+  } else {
+    context = document.getElementById('contextText').value;
+  }
+  if (!context.trim()) { alert('Введите контекст (переписку или загрузите аудио)'); return; }
+
+  const task = document.getElementById('task').value || 'ответить на сообщение';
+
+  const btn = document.getElementById('generateBtn');
+  const spinner = document.getElementById('spinner');
+  const resultArea = document.getElementById('resultArea');
+
+  btn.disabled = true;
+  spinner.classList.add('visible');
+  resultArea.classList.remove('visible');
+
+  try {
+    const resp = await fetch(API + '/api/communicate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        profile_id: recipientId,
+        context: context,
+        task: task,
+        goal: selectedGoal,
+        msg_type: 'email',
+        include_notes: true,
+      }),
+    });
+
+    const data = await resp.json();
+
+    document.getElementById('resultText').textContent = data.message || 'Ошибка генерации';
+
+    const notesEl = document.getElementById('resultNotes');
+    if (data.notes) {
+      notesEl.textContent = data.notes;
+      notesEl.style.display = 'block';
+    } else {
+      notesEl.style.display = 'none';
+    }
+
+    resultArea.classList.add('visible');
+    resultArea.scrollIntoView({ behavior: 'smooth' });
+  } catch (e) {
+    alert('Ошибка: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    spinner.classList.remove('visible');
+  }
+}
+
+function regenerate() {
+  generate();
+}
+
+// ─── Copy ───────────────────────────────────────────────────────────────────
+
+function copyResult() {
+  const text = document.getElementById('resultText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const label = document.getElementById('copiedLabel');
+    label.classList.add('show');
+    setTimeout(() => label.classList.remove('show'), 2000);
+  });
+}
+
+// ─── Start ──────────────────────────────────────────────────────────────────
+init();
+</script>
+
+</body>
+</html>
