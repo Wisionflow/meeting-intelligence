@@ -670,11 +670,15 @@ async function processMeetingAudio(file) {
   addUserMsg('Загружаю запись встречи: ' + file.name, [file.name]);
   startStreamingIndicator();
 
-  const fd = new FormData();
-  fd.append('file', file);
+  const fileData = await file.arrayBuffer();
+  const encName = encodeURIComponent(file.name);
 
   try {
-    const r = await fetch(PIPELINE_URL + '/api/process-audio', { method: 'POST', body: fd });
+    const r = await fetch(PIPELINE_URL + '/api/process-audio?filename=' + encName, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: fileData,
+    });
     const d = await r.json();
 
     stopStreamingIndicator();
