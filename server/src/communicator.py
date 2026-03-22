@@ -320,3 +320,162 @@ async def strategic_analysis(
         "third_parties_used": third_party_names,
         "tokens": tokens,
     }
+
+
+# ─── V3: Chat-style analysis (natural language input) ────────────────────────
+
+CHAT_SYSTEM_PROMPT = """Ты — стратегический советник по коммуникации в организации.
+
+Пользователь описывает ситуацию свободным текстом. Ты анализируешь через психопрофили участников и даёшь стратегический анализ.
+
+ДОСТУПНЫЕ ПРОФИЛИ ЛЮДЕЙ В ОРГАНИЗАЦИИ:
+{profiles_section}
+
+ПРАВИЛА:
+- Если пользователь описывает ситуацию впервые — дай полный анализ в 5 блоках
+- Если добавляет контекст к кейсу — обнови только изменившиеся блоки
+- Если задаёт вопрос — ответь на вопрос, при необходимости обнови блоки
+- Если в тексте упомянут человек с профилем — используй его DISC/Big5 для анализа
+- Если упомянут человек БЕЗ профиля — попроси описать его в 2-3 предложениях
+
+ФОРМАТ ВЫВОДА — строго XML-теги:
+
+<block1>
+Анализ ситуации и людей. 3-5 конкретных наблюдений.
+Что важно для получателя (мотивация, страхи из DISC).
+Где трение между профилями. Какую тактику использует получатель.
+</block1>
+
+<block2>
+Стратегия коммуникации.
+Что делать (конкретные приёмы). Что НЕ делать (ловушки).
+Порядок аргументов. Тон и структура.
+Если обнаружен риск коалиции — указать явно.
+</block2>
+
+<block3>
+Готовый текст сообщения. Полностью готов к отправке.
+- Пиши как живой человек, НЕ как ИИ
+- Никакого markdown — чистый текст
+- Без шаблонных фраз ("в рамках", "хотелось бы отметить")
+- Разная длина предложений, разговорные обороты допустимы
+- Если email — включи "Тема: ..." в первой строке
+- Подпись — по контексту
+
+После текста на отдельной строке "---" и короткий комментарий (1-2 предложения).
+</block3>
+
+<block4>
+Почему именно так. Для ключевых решений в тексте:
+"[Элемент текста]" — потому что [логика из профиля]
+3-5 объяснений.
+</block4>
+
+<block5>
+Что делать если не сработает.
+Признаки провала. Следующий шаг. Что НЕ делать.
+Если эскалация — к кому, с чем, риски коалиции.
+</block5>
+
+ИСКЛЮЧЕНИЕ: если пользователь задаёт короткий вопрос или уточняет — можешь ответить без блоков, обычным текстом. Блоки выдавай только когда есть ситуация для анализа."""
+
+
+async def chat_analysis(
+    message: str,
+    history: list[dict],
+    profiles: list[dict],
+) -> dict:
+    """Chat-style strategic analysis. User writes naturally, AI understands.
+
+    Args:
+        message: user's latest message (free text)
+        history: previous messages [{"role": "user"|"assistant", "content": ...}]
+        profiles: detected profiles [{"name": ..., "profile": ..., "guide": ...}]
+
+    Returns:
+        {"blocks": {...} | None, "text": str, "third_parties_used": [...],
+         "tokens": {"input": N, "output": N}}
+    """
+    if not ANTHROPIC_API_KEY:
+        raise RuntimeError("ANTHROPIC_API_KEY not set")
+
+    # Build profiles section
+    profiles_section = ""
+    profile_names = []
+    if profiles:
+        parts = []
+        for p in profiles:
+            profile_names.append(p["name"])
+            section = f"--- {p['name']} ---\n"
+            if p.get("profile"):
+                section += p["profile"][:3000] + "\n"
+            if p.get("guide"):
+                section += "\nКак общаться:\n" + p["guide"][:1500]
+            parts.append(section)
+        profiles_section = "\n\n".join(parts)
+    else:
+        profiles_section = "(Профили не обнаружены в сообщении)"
+
+    # Check coalition risks between detected profiles
+    coalition_warnings = []
+    for i, p1 in enumerate(profiles):
+        for p2 in profiles[i + 1:]:
+            dist = _disc_distance(p1.get("profile", ""), p2.get("profile", ""))
+            if dist is not None and dist < 25:
+                coalition_warnings.append(
+                    f"ВНИМАНИЕ: Профили {p1['name']} и {p2['name']} близки "
+                    f"(DISC-расстояние {dist}). Риск коалиции."
+                )
+
+    if coalition_warnings:
+        profiles_section += "\n\n" + "\n".join(coalition_warnings)
+
+    system = CHAT_SYSTEM_PROMPT.format(profiles_section=profiles_section)
+
+    # Build messages array
+    messages = []
+    for h in history[-20:]:  # last 20 messages max
+        messages.append({
+            "role": h["role"],
+            "content": h["content"][:5000],
+        })
+    messages.append({"role": "user", "content": message})
+
+    model = os.environ.get("ANTHROPIC_MODEL", ANTHROPIC_MODEL)
+    log.info(
+        "Chat analysis: %d history msgs, %d profiles (%s), model=%s",
+        len(history), len(profiles), profile_names, model,
+    )
+
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    response = client.messages.create(
+        model=model,
+        max_tokens=4096,
+        system=system,
+        messages=messages,
+    )
+
+    result_text = response.content[0].text
+    tokens = {
+        "input": response.usage.input_tokens,
+        "output": response.usage.output_tokens,
+    }
+
+    # Try to parse blocks — may not have blocks if it's a simple Q&A
+    blocks = _parse_blocks(result_text)
+    has_blocks = any(blocks.get(f"block{i}") for i in range(1, 6))
+
+    log.info(
+        "Chat analysis complete: %d chars, %d+%d tokens, has_blocks=%s, profiles=%s",
+        len(result_text), tokens["input"], tokens["output"],
+        has_blocks, profile_names,
+    )
+
+    return {
+        "blocks": blocks if has_blocks else None,
+        "text": result_text if not has_blocks else blocks.get("message", ""),
+        "raw": result_text,
+        "third_parties_used": profile_names,
+        "coalition_warnings": coalition_warnings,
+        "tokens": tokens,
+    }

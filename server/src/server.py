@@ -38,7 +38,7 @@ from src.storage import (
     list_meetings, count_meetings, save_processing_status, update_meeting_status,
 )
 from src.report import generate_html_report
-from src.communicator import adapt_message, strategic_analysis
+from src.communicator import adapt_message, strategic_analysis, chat_analysis
 from src.profiles import (
     list_profiles, get_guide, get_full_profile,
     setup_tables as setup_profile_tables,
@@ -70,6 +70,10 @@ async def startup():
     await pool.execute("""
         ALTER TABLE mi_communications
         ADD COLUMN IF NOT EXISTS mode TEXT DEFAULT 'simple'
+    """)
+    await pool.execute("""
+        ALTER TABLE mi_communications
+        ADD COLUMN IF NOT EXISTS session_id TEXT DEFAULT ''
     """)
     log.info("VisionFlow server started on :%d", config.PORT)
 
@@ -549,6 +553,133 @@ async def api_upload_context_file(file: UploadFile = File(...)):
             f"Unsupported format: {ext}. "
             f"Supported: {', '.join(sorted(IMAGE_EXTENSIONS | DOC_EXTENSIONS | config.AUDIO_EXTENSIONS))}",
         )
+
+
+# ─── Chat endpoint (v3 — natural language) ────────────────────────────────
+
+class ChatMessage(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
+
+class ChatRequest(BaseModel):
+    message: str
+    history: list[ChatMessage] = []
+    session_id: str = ""
+    user_id: str = ""
+
+
+async def _detect_profiles_in_text(text: str) -> list[dict]:
+    """Find all known people mentioned in text and load their full profiles."""
+    pool = await get_pool()
+    rows = await pool.fetch(
+        "SELECT id, display_name, guide, profile_data FROM mi_profiles"
+    )
+    detected = []
+    text_lower = text.lower()
+    for r in rows:
+        name = r["display_name"] or ""
+        # Match if any surname (word > 3 chars) appears in text
+        parts = name.split()
+        for part in parts:
+            if len(part) > 3 and part.lower() in text_lower:
+                detected.append({
+                    "id": r["id"],
+                    "name": name,
+                    "profile": r["profile_data"] or "",
+                    "guide": r["guide"] or "",
+                })
+                break
+    return detected[:5]  # max 5 profiles
+
+
+@app.post("/api/communicate/chat")
+async def api_chat(req: ChatRequest):
+    """Chat-style communication analysis. User writes naturally."""
+
+    # Detect profiles in current message + recent history
+    search_text = req.message
+    for h in req.history[-4:]:
+        if h.role == "user":
+            search_text += " " + h.content
+
+    detected = await _detect_profiles_in_text(search_text)
+
+    result = await chat_analysis(
+        message=req.message,
+        history=[{"role": h.role, "content": h.content} for h in req.history],
+        profiles=detected,
+    )
+
+    # Save to DB
+    pool = await get_pool()
+    blocks_json = json.dumps(result["blocks"], ensure_ascii=False) if result["blocks"] else ""
+    row = await pool.fetchrow(
+        """
+        INSERT INTO mi_communications
+            (user_id, profile_id, profile_name, context, context_type,
+             task, goal, msg_type,
+             generated_message, notes, tokens_input, tokens_output,
+             analysis_json, mode, session_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        RETURNING id
+        """,
+        req.user_id,
+        detected[0]["id"] if detected else "",
+        ", ".join(p["name"] for p in detected) if detected else "",
+        req.message[:10000],
+        "chat",
+        req.message[:200],
+        "chat",
+        "email",
+        result.get("text", "") or result.get("blocks", {}).get("message", ""),
+        None,
+        result.get("tokens", {}).get("input", 0),
+        result.get("tokens", {}).get("output", 0),
+        blocks_json,
+        "chat",
+        req.session_id,
+    )
+    result["id"] = row["id"]
+
+    log.info(
+        "Chat #%d: session=%s, profiles=%s, has_blocks=%s",
+        row["id"], req.session_id[:8] if req.session_id else "none",
+        [p["name"] for p in detected],
+        bool(result.get("blocks")),
+    )
+
+    return result
+
+
+@app.get("/api/communicate/sessions")
+async def api_list_sessions(user_id: str = "", limit: int = 20):
+    """List chat sessions for sidebar."""
+    pool = await get_pool()
+    rows = await pool.fetch(
+        """
+        SELECT session_id,
+               MIN(context) as first_message,
+               MAX(created_at) as last_activity,
+               COUNT(*) as message_count
+        FROM mi_communications
+        WHERE mode = 'chat' AND session_id != ''
+              AND ($1 = '' OR user_id = $1)
+        GROUP BY session_id
+        ORDER BY last_activity DESC
+        LIMIT $2
+        """,
+        user_id, limit,
+    )
+    sessions = []
+    for r in rows:
+        d = dict(r)
+        if d.get("last_activity"):
+            d["last_activity"] = d["last_activity"].isoformat()
+        # Trim first message for preview
+        fm = d.get("first_message", "") or ""
+        d["preview"] = fm[:80] + ("..." if len(fm) > 80 else "")
+        sessions.append(d)
+    return {"sessions": sessions}
 
 
 # ─── Entry point ────────────────────────────────────────────────────────────

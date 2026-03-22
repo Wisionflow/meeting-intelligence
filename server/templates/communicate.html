@@ -2,782 +2,650 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VisionFlow — Коммуникации v2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>VisionFlow — Коммуникатор</title>
 <style>
   :root {
-    --primary: #006699;
-    --primary-light: #e8f4fa;
-    --primary-dark: #004d73;
-    --bg: #f5f7fa;
-    --card: #fff;
-    --text: #1a1a1a;
-    --text-muted: #666;
-    --border: #e0e4e8;
-    --success: #2a9d2a;
-    --success-bg: #f0faf0;
-    --warn: #c48000;
-    --warn-bg: #fef8ec;
-    --info: #2563eb;
-    --info-bg: #eff6ff;
+    --header-bg: #1a365d;
+    --user-msg: #1a365d;
+    --ai-msg: #ffffff;
+    --bg: #f7f8fa;
+    --text: #333;
+    --text-light: #888;
+    --border: #e2e5e9;
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --success: #16a34a;
+    --success-bg: #f0fdf4;
+    --warn: #d97706;
+    --warn-bg: #fffbeb;
     --danger: #dc2626;
     --danger-bg: #fef2f2;
-    --radius: 10px;
+    --sidebar-w: 260px;
+    --input-h: 56px;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
     font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    font-size: 14px; line-height: 1.5; color: var(--text);
-    background: var(--bg); min-height: 100vh;
+    font-size: 14px; line-height: 1.55; color: var(--text);
+    background: var(--bg); height: 100vh; overflow: hidden;
+    display: flex; flex-direction: column;
   }
 
   /* ─── Header ─── */
   .header {
-    background: var(--primary); color: #fff;
-    padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
+    background: var(--header-bg); color: #fff;
+    padding: 10px 20px; display: flex; align-items: center;
+    justify-content: space-between; flex-shrink: 0; z-index: 10;
   }
-  .header h1 { font-size: 17px; font-weight: 600; letter-spacing: 0.3px; }
-  .header .subtitle { font-size: 12px; opacity: 0.75; }
-  .header .badge-v2 {
-    background: rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 12px;
-    font-size: 11px; font-weight: 600;
+  .header h1 { font-size: 15px; font-weight: 600; }
+  .header .sub { font-size: 11px; opacity: 0.65; margin-left: 10px; }
+  .header .v-badge {
+    background: rgba(255,255,255,0.15); padding: 2px 8px;
+    border-radius: 10px; font-size: 10px;
   }
 
   /* ─── Layout ─── */
-  .layout {
-    max-width: 1140px; margin: 0 auto; padding: 20px 16px;
-    display: grid; grid-template-columns: 260px 1fr; gap: 20px;
-  }
-  @media (max-width: 768px) {
-    .layout { grid-template-columns: 1fr; }
-    .sidebar { order: 2; }
-  }
+  .app { display: flex; flex: 1; overflow: hidden; }
 
   /* ─── Sidebar ─── */
-  .sidebar { display: flex; flex-direction: column; gap: 14px; }
-
-  .card {
-    background: var(--card); border-radius: var(--radius); padding: 16px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid var(--border);
+  .sidebar {
+    width: var(--sidebar-w); background: #fff; border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0;
   }
-  .card-title {
-    font-size: 11px; font-weight: 700; color: var(--primary);
-    text-transform: uppercase; letter-spacing: 0.8px;
-    margin-bottom: 10px;
+  .sidebar-header {
+    padding: 12px 14px; border-bottom: 1px solid var(--border);
+  }
+  .btn-new {
+    width: 100%; padding: 8px; background: var(--accent); color: #fff;
+    border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .btn-new:hover { background: #1d4ed8; }
+  .session-list { flex: 1; overflow-y: auto; padding: 6px 0; }
+  .session-item {
+    padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f5f5f5;
+    transition: background 0.1s; font-size: 12px;
+  }
+  .session-item:hover { background: #f8f9fb; }
+  .session-item.active { background: var(--accent-light); border-left: 3px solid var(--accent); }
+  .session-preview { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .session-meta { color: var(--text-light); font-size: 11px; margin-top: 2px; }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
   }
 
-  .profile-card { cursor: pointer; transition: all 0.15s; margin-bottom: 6px; padding: 10px 12px; }
-  .profile-card:hover { border-color: var(--primary); }
-  .profile-card.selected { border-color: var(--primary); background: var(--primary-light); }
-  .profile-name { font-size: 14px; font-weight: 600; }
-  .profile-role { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  /* ─── Chat area ─── */
+  .chat-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-  .guide-panel { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
-  .guide-panel.open { max-height: 600px; overflow-y: auto; }
-  .guide-tip {
-    font-size: 12px; line-height: 1.5; padding: 6px 0;
-    border-bottom: 1px solid #f0f0f0; color: #444;
+  .messages {
+    flex: 1; overflow-y: auto; padding: 20px 0;
+    scroll-behavior: smooth;
   }
-  .guide-tip:last-child { border-bottom: none; }
-  .guide-tip strong { color: var(--primary-dark); }
+  .messages-inner { max-width: 760px; margin: 0 auto; padding: 0 20px; }
 
-  .history-item {
-    padding: 8px 0; border-bottom: 1px solid #f0f0f0;
-    cursor: pointer; font-size: 12px;
+  /* ─── Messages ─── */
+  .msg { margin-bottom: 16px; display: flex; }
+  .msg-user { justify-content: flex-end; }
+  .msg-ai { justify-content: flex-start; }
+
+  .msg-bubble {
+    max-width: 85%; border-radius: 16px; padding: 12px 16px;
+    font-size: 14px; line-height: 1.6;
   }
-  .history-item:hover { color: var(--primary); }
-  .history-item:last-child { border-bottom: none; }
-  .history-date { color: var(--text-muted); font-size: 11px; }
-  .history-preview { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .history-mode {
-    display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 8px;
-    background: var(--info-bg); color: var(--info);
+  .msg-user .msg-bubble {
+    background: var(--user-msg); color: #fff;
+    border-bottom-right-radius: 4px;
   }
-  .no-history { font-size: 12px; color: #aaa; text-align: center; padding: 12px; }
-
-  /* ─── Main ─── */
-  .main { display: flex; flex-direction: column; gap: 14px; }
-
-  .context-tabs { display: flex; gap: 0; margin-bottom: 10px; }
-  .ctx-tab {
-    flex: 1; padding: 9px 0; text-align: center;
-    border: 1px solid var(--border); background: #fafafa;
-    cursor: pointer; font-size: 13px; font-weight: 500;
-    transition: all 0.15s;
+  .msg-ai .msg-bubble {
+    background: var(--ai-msg); color: var(--text);
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    max-width: 92%; padding: 0; overflow: hidden;
   }
-  .ctx-tab:first-child { border-radius: var(--radius) 0 0 var(--radius); }
-  .ctx-tab:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
-  .ctx-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-  .ctx-content { display: none; }
-  .ctx-content.active { display: block; }
+  /* Plain text AI response (no blocks) */
+  .ai-text { padding: 14px 16px; white-space: pre-wrap; }
 
-  textarea {
-    width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px;
-    font-size: 14px; font-family: inherit; resize: vertical;
-    min-height: 140px; transition: border-color 0.2s;
+  /* ─── Accordion blocks ─── */
+  .block { border-bottom: 1px solid #f0f2f4; }
+  .block:last-child { border-bottom: none; }
+  .block-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 16px; cursor: pointer; user-select: none;
+    font-size: 13px; font-weight: 600; color: #555;
+    transition: background 0.1s;
   }
-  textarea:focus { outline: none; border-color: var(--primary); }
-
-  input[type="text"] {
-    width: 100%; padding: 10px 12px; border: 1px solid var(--border);
-    border-radius: 8px; font-size: 14px; font-family: inherit;
+  .block-head:hover { background: #f8f9fb; }
+  .block-icon { font-size: 15px; }
+  .block-label { flex: 1; }
+  .block-arrow {
+    font-size: 10px; color: #bbb; transition: transform 0.2s;
   }
-  input:focus { outline: none; border-color: var(--primary); }
-
-  label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; }
-
-  /* Upload zones */
-  .upload-zone {
-    border: 2px dashed var(--border); border-radius: 8px;
-    padding: 28px; text-align: center; cursor: pointer;
-    transition: all 0.2s; color: var(--text-muted);
-  }
-  .upload-zone:hover { border-color: var(--primary); color: var(--primary); }
-  .upload-zone.done { border-color: var(--success); background: var(--success-bg); color: var(--success); }
-  .upload-icon { font-size: 28px; margin-bottom: 4px; }
-  .upload-hint { font-size: 12px; }
-
-  /* File chips */
-  .file-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-  .file-chip {
-    display: flex; align-items: center; gap: 4px;
-    padding: 4px 10px; background: var(--primary-light); border-radius: 12px;
-    font-size: 12px; color: var(--primary-dark);
-  }
-  .file-chip .remove { cursor: pointer; font-size: 14px; opacity: 0.6; }
-  .file-chip .remove:hover { opacity: 1; }
-
-  /* Goals */
-  .goals { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-  .goal {
-    padding: 5px 14px; border: 1px solid var(--border); border-radius: 20px;
-    font-size: 12px; cursor: pointer; background: #fff; transition: all 0.15s;
-    user-select: none;
-  }
-  .goal:hover { border-color: var(--primary); color: var(--primary); }
-  .goal.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-
-  /* Button */
-  .btn-generate {
-    width: 100%; padding: 13px; background: var(--primary); color: #fff; border: none;
-    border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
-    transition: background 0.2s;
-  }
-  .btn-generate:hover { background: var(--primary-dark); }
-  .btn-generate:disabled { background: #a0c4d8; cursor: not-allowed; }
-
-  /* Loading */
-  .loading { text-align: center; padding: 20px; color: var(--text-muted); display: none; }
-  .loading.show { display: block; }
-  .loading-dots::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
-  @keyframes dots { 0%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} }
-
-  /* ─── 5-Block Result ─── */
-  .results { display: none; flex-direction: column; gap: 10px; }
-  .results.show { display: flex; }
-
-  .block-card {
-    border-radius: var(--radius); overflow: hidden;
-    border: 1px solid var(--border); background: var(--card);
-  }
-  .block-header {
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px 16px; cursor: pointer; user-select: none;
-    transition: background 0.15s;
-  }
-  .block-header:hover { background: #f8f9fa; }
-  .block-icon { font-size: 18px; flex-shrink: 0; }
-  .block-title { font-size: 13px; font-weight: 600; flex: 1; }
-  .block-toggle { font-size: 12px; color: var(--text-muted); transition: transform 0.2s; }
-  .block-card.open .block-toggle { transform: rotate(180deg); }
+  .block.open .block-arrow { transform: rotate(180deg); }
 
   .block-body {
-    max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
+    max-height: 0; overflow: hidden; transition: max-height 0.25s ease;
   }
-  .block-card.open .block-body { max-height: 2000px; }
-  .block-content {
-    padding: 0 16px 16px; font-size: 14px; line-height: 1.7;
-    white-space: pre-wrap;
+  .block.open .block-body { max-height: 3000px; }
+  .block-text {
+    padding: 0 16px 14px; font-size: 13px; line-height: 1.7;
+    white-space: pre-wrap; color: #444;
   }
 
-  /* Block colors */
-  .block-analysis .block-header { border-left: 4px solid var(--info); }
-  .block-strategy .block-header { border-left: 4px solid var(--success); }
-  .block-message .block-header { border-left: 4px solid var(--primary); background: var(--primary-light); }
-  .block-explanation .block-header { border-left: 4px solid var(--warn); }
-  .block-fallback .block-header { border-left: 4px solid var(--danger); }
-
-  /* Block 3 special */
-  .message-text {
-    background: #f8faf8; border: 1px solid #c8dcc8; border-radius: 8px;
-    padding: 16px; font-size: 14px; line-height: 1.65;
-    white-space: pre-wrap;
+  /* Block 3 special styling */
+  .block-msg { border-left: 3px solid var(--accent); }
+  .block-msg .block-head { color: var(--accent); background: var(--accent-light); }
+  .msg-text-box {
+    margin: 0 12px 10px; padding: 14px;
+    background: #f8faf8; border: 1px solid #d4e4d4; border-radius: 8px;
+    font-size: 14px; line-height: 1.65; white-space: pre-wrap;
   }
-  .message-comment {
-    margin-top: 10px; padding: 10px; font-size: 12px;
-    color: var(--text-muted); border-top: 1px solid #e8e8e8;
+  .msg-comment {
+    padding: 0 16px 10px; font-size: 12px; color: var(--text-light);
     font-style: italic;
   }
+  .btn-copy {
+    margin-left: auto; padding: 3px 10px; background: none;
+    border: 1px solid #ccc; border-radius: 6px; font-size: 11px;
+    cursor: pointer; color: #777; transition: all 0.15s;
+  }
+  .btn-copy:hover { border-color: var(--success); color: var(--success); }
 
-  /* Action buttons */
-  .block-actions {
-    display: flex; gap: 8px; padding: 0 16px 14px;
-  }
-  .btn-action {
-    padding: 7px 16px; border: 1px solid var(--border); border-radius: 6px;
-    font-size: 13px; cursor: pointer; background: #fff; transition: all 0.15s;
-  }
-  .btn-action:hover { background: #f0f0f0; }
-  .btn-action.copy { border-color: var(--success); color: var(--success); font-weight: 600; }
-  .btn-action.copy:hover { background: var(--success-bg); }
+  /* Block color accents */
+  .block-analysis .block-head { border-left: 3px solid var(--accent); }
+  .block-strategy .block-head { border-left: 3px solid var(--success); }
+  .block-why .block-head { border-left: 3px solid var(--warn); }
+  .block-fallback .block-head { border-left: 3px solid var(--danger); }
 
   /* Third-party badge */
   .tp-badge {
-    display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px;
-    background: var(--warn-bg); color: var(--warn); margin-left: 8px;
+    padding: 8px 16px; font-size: 12px; color: var(--warn);
+    background: var(--warn-bg); display: flex; align-items: center; gap: 6px;
   }
 
+  /* ─── Typing indicator ─── */
+  .typing { display: none; margin-bottom: 16px; }
+  .typing.show { display: flex; }
+  .typing .msg-bubble {
+    background: var(--ai-msg); padding: 14px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-bottom-left-radius: 4px;
+  }
+  .dot-pulse { display: flex; gap: 4px; align-items: center; }
+  .dot-pulse span {
+    width: 7px; height: 7px; border-radius: 50%; background: #aab;
+    animation: pulse 1.4s infinite;
+  }
+  .dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
+  .dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse {
+    0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1); }
+  }
+
+  /* ─── Input bar ─── */
+  .input-bar {
+    border-top: 1px solid var(--border); background: #fff;
+    padding: 12px 20px; flex-shrink: 0;
+  }
+  .input-wrap {
+    max-width: 760px; margin: 0 auto; display: flex;
+    align-items: flex-end; gap: 8px;
+    background: #f5f7fa; border: 1px solid var(--border);
+    border-radius: 16px; padding: 6px 6px 6px 14px;
+    transition: border-color 0.2s;
+  }
+  .input-wrap:focus-within { border-color: var(--accent); }
+
+  #chatInput {
+    flex: 1; border: none; background: none; outline: none;
+    font-size: 14px; font-family: inherit; line-height: 1.5;
+    resize: none; max-height: 120px; min-height: 22px;
+    padding: 4px 0;
+  }
+  #chatInput::placeholder { color: #aab; }
+
+  .input-btn {
+    width: 36px; height: 36px; border-radius: 10px;
+    border: none; cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
+    transition: background 0.15s; flex-shrink: 0;
+    font-size: 16px;
+  }
+  .btn-attach { background: none; color: #999; }
+  .btn-attach:hover { background: #eee; color: #666; }
+  .btn-send { background: var(--accent); color: #fff; }
+  .btn-send:hover { background: #1d4ed8; }
+  .btn-send:disabled { background: #ccc; cursor: not-allowed; }
+
+  .file-chips { display: flex; flex-wrap: wrap; gap: 4px; max-width: 760px; margin: 6px auto 0; }
+  .file-chip {
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 8px; background: var(--accent-light); border-radius: 10px;
+    font-size: 11px; color: var(--accent);
+  }
+  .file-chip .x { cursor: pointer; opacity: 0.6; }
+  .file-chip .x:hover { opacity: 1; }
+
+  /* Toast */
   .toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-    background: #333; color: #fff; padding: 10px 24px; border-radius: 8px;
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    background: #333; color: #fff; padding: 8px 20px; border-radius: 8px;
     font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none;
     z-index: 100;
   }
   .toast.show { opacity: 1; }
+
+  /* Empty state */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 100%; color: #bbc; text-align: center;
+    padding: 40px;
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+  .empty-title { font-size: 18px; font-weight: 600; color: #99a; margin-bottom: 8px; }
+  .empty-hint { font-size: 13px; max-width: 400px; line-height: 1.6; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div>
+  <div style="display:flex;align-items:baseline;">
     <h1>VisionFlow</h1>
-    <div class="subtitle">Стратегический коммуникационный гид</div>
+    <span class="sub">Коммуникатор</span>
   </div>
-  <div style="display:flex;align-items:center;gap:12px;">
-    <span class="badge-v2">v2</span>
-    <div id="userBadge" style="font-size:12px;opacity:0.8;"></div>
-  </div>
+  <span class="v-badge">v2</span>
 </div>
 
-<div class="layout">
+<div class="app">
 
-  <!-- ─── Sidebar ─── -->
-  <div class="sidebar">
-
-    <div class="card">
-      <div class="card-title">Кому пишем</div>
-      <div id="profileList"><div style="font-size:12px;color:#aaa;">Загрузка...</div></div>
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <button class="btn-new" onclick="newSession()">+ Новый кейс</button>
     </div>
-
-    <div class="card" id="guideCard" style="display:none;">
-      <div class="card-title">Как общаться с <span id="guideName"></span></div>
-      <div id="guideContent" class="guide-panel open"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">История</div>
-      <div id="historyList"><div class="no-history">Пока пусто</div></div>
-    </div>
+    <div class="session-list" id="sessionList"></div>
   </div>
 
-  <!-- ─── Main ─── -->
-  <div class="main">
-
-    <!-- Context -->
-    <div class="card">
-      <div class="card-title">Контекст</div>
-
-      <div class="context-tabs">
-        <div class="ctx-tab active" onclick="switchCtx('text')">Переписка</div>
-        <div class="ctx-tab" onclick="switchCtx('audio')">Запись</div>
-        <div class="ctx-tab" onclick="switchCtx('file')">Файл</div>
-      </div>
-
-      <div id="ctx-text" class="ctx-content active">
-        <textarea id="contextText" placeholder="Вставьте переписку из почты или чата. Можно скопировать всю цепочку писем — система разберётся."></textarea>
-      </div>
-
-      <div id="ctx-audio" class="ctx-content">
-        <div id="uploadZone" class="upload-zone" onclick="document.getElementById('audioFile').click()">
-          <div class="upload-icon">&#x1f3a4;</div>
-          <div>Загрузить запись разговора</div>
-          <div class="upload-hint">m4a, mp3, wav — до 25 МБ</div>
-        </div>
-        <input type="file" id="audioFile" accept=".m4a,.mp3,.wav,.ogg,.flac,.aac,.wma,.webm" style="display:none" onchange="onAudioFile(this)">
-        <div id="audioProgress" style="display:none;font-size:12px;color:var(--text-muted);margin-top:8px;"></div>
-        <div id="transcriptBox" style="display:none;margin-top:10px;">
-          <label>Расшифровка</label>
-          <textarea id="transcriptText" style="min-height:120px;font-size:13px;background:#fafafa;" readonly></textarea>
-        </div>
-      </div>
-
-      <div id="ctx-file" class="ctx-content">
-        <div id="fileUploadZone" class="upload-zone" onclick="document.getElementById('ctxFile').click()">
-          <div class="upload-icon">&#x1f4ce;</div>
-          <div>Загрузить скриншот или документ</div>
-          <div class="upload-hint">png, jpg, txt, csv, md — до 10 МБ</div>
-        </div>
-        <input type="file" id="ctxFile" accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.txt,.md,.csv,.json,.xml,.html" style="display:none" onchange="onCtxFile(this)">
-        <div id="fileProgress" style="display:none;font-size:12px;color:var(--text-muted);margin-top:8px;"></div>
-        <div class="file-chips" id="fileChips"></div>
-        <div id="fileTextBox" style="display:none;margin-top:10px;">
-          <label>Содержимое файла</label>
-          <textarea id="fileText" style="min-height:100px;font-size:13px;background:#fafafa;" readonly></textarea>
-        </div>
-      </div>
-    </div>
-
-    <!-- Task -->
-    <div class="card">
-      <div class="card-title">Задача</div>
-      <label>Что нужно написать / какая ситуация</label>
-      <input type="text" id="taskInput" placeholder="Например: ответить на его уклонение по срокам, конфликт по переносам резервов">
-
-      <label style="margin-top:10px;">Цель</label>
-      <div class="goals">
-        <div class="goal active" data-g="respond" onclick="pickGoal(this)">Ответить</div>
-        <div class="goal" data-g="request" onclick="pickGoal(this)">Попросить</div>
-        <div class="goal" data-g="persuade" onclick="pickGoal(this)">Убедить</div>
-        <div class="goal" data-g="inform" onclick="pickGoal(this)">Проинформировать</div>
-        <div class="goal" data-g="escalate" onclick="pickGoal(this)">Эскалация</div>
-        <div class="goal" data-g="deescalate" onclick="pickGoal(this)">Снизить напряжение</div>
-      </div>
-    </div>
-
-    <!-- Generate -->
-    <button class="btn-generate" id="btnGen" onclick="generate()">
-      Стратегический анализ
-    </button>
-
-    <div class="loading" id="loading">
-      &#x23F3; Анализирую ситуацию через профили участников<span class="loading-dots"></span>
-    </div>
-
-    <!-- 5-Block Results -->
-    <div class="results" id="results">
-
-      <div id="tpInfo" style="display:none;padding:8px 12px;background:var(--warn-bg);border-radius:8px;font-size:12px;color:var(--warn);"></div>
-
-      <!-- Block 1: Analysis -->
-      <div class="block-card block-analysis" id="block1Card">
-        <div class="block-header" onclick="toggleBlock('block1Card')">
-          <span class="block-icon">&#x1f50d;</span>
-          <span class="block-title">Анализ ситуации и людей</span>
-          <span class="block-toggle">&#9660;</span>
-        </div>
-        <div class="block-body">
-          <div class="block-content" id="block1"></div>
-        </div>
-      </div>
-
-      <!-- Block 2: Strategy -->
-      <div class="block-card block-strategy" id="block2Card">
-        <div class="block-header" onclick="toggleBlock('block2Card')">
-          <span class="block-icon">&#x1f3af;</span>
-          <span class="block-title">Стратегия коммуникации</span>
-          <span class="block-toggle">&#9660;</span>
-        </div>
-        <div class="block-body">
-          <div class="block-content" id="block2"></div>
-        </div>
-      </div>
-
-      <!-- Block 3: Ready message (PRIMARY) -->
-      <div class="block-card block-message open" id="block3Card">
-        <div class="block-header" onclick="toggleBlock('block3Card')">
-          <span class="block-icon">&#x2709;</span>
-          <span class="block-title">Готовый текст — скопируйте и отправьте</span>
-          <span class="block-toggle">&#9660;</span>
-        </div>
-        <div class="block-body">
-          <div style="padding:0 16px 8px;">
-            <div class="message-text" id="block3msg"></div>
-            <div class="message-comment" id="block3comment"></div>
+  <!-- Chat -->
+  <div class="chat-container">
+    <div class="messages" id="messages">
+      <div class="messages-inner" id="messagesInner">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">&#x2709;</div>
+          <div class="empty-title">Опишите ситуацию</div>
+          <div class="empty-hint">
+            Например: «Хренова пишет Мельникову по переносам резервов.
+            Он уклоняется, разобрал 2 кейса из 85 и закрыл вопрос.
+            Нужно получить письменный ответ.»
           </div>
-          <div class="block-actions">
-            <button class="btn-action copy" onclick="copyMessage()">&#x1f4cb; Скопировать текст письма</button>
-            <button class="btn-action" onclick="generate()">&#x1f504; Другой вариант</button>
+        </div>
+
+        <!-- Typing indicator -->
+        <div class="msg msg-ai typing" id="typing">
+          <div class="msg-bubble" style="padding:14px 20px;">
+            <div class="dot-pulse">
+              <span></span><span></span><span></span>
+            </div>
           </div>
         </div>
       </div>
-
-      <!-- Block 4: Explanation -->
-      <div class="block-card block-explanation" id="block4Card">
-        <div class="block-header" onclick="toggleBlock('block4Card')">
-          <span class="block-icon">&#x1f4a1;</span>
-          <span class="block-title">Почему именно так</span>
-          <span class="block-toggle">&#9660;</span>
-        </div>
-        <div class="block-body">
-          <div class="block-content" id="block4"></div>
-        </div>
-      </div>
-
-      <!-- Block 5: Fallback -->
-      <div class="block-card block-fallback" id="block5Card">
-        <div class="block-header" onclick="toggleBlock('block5Card')">
-          <span class="block-icon">&#x1f6a8;</span>
-          <span class="block-title">Что делать если не сработает</span>
-          <span class="block-toggle">&#9660;</span>
-        </div>
-        <div class="block-body">
-          <div class="block-content" id="block5"></div>
-        </div>
-      </div>
-
     </div>
 
+    <!-- Input -->
+    <div class="input-bar">
+      <div class="input-wrap">
+        <button class="input-btn btn-attach" onclick="document.getElementById('fileInput').click()" title="Прикрепить файл">
+          &#x1f4ce;
+        </button>
+        <textarea id="chatInput" rows="1" placeholder="Опишите ситуацию или вставьте переписку..."
+                  onkeydown="onKey(event)" oninput="autoGrow(this)"></textarea>
+        <button class="input-btn btn-send" id="btnSend" onclick="send()" title="Отправить">
+          &#x27A4;
+        </button>
+      </div>
+      <input type="file" id="fileInput" style="display:none"
+             accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.txt,.md,.csv,.json,.m4a,.mp3,.wav"
+             onchange="onFile(this)" multiple>
+      <div class="file-chips" id="fileChips"></div>
+    </div>
   </div>
+
 </div>
 
-<div class="toast" id="toast">Скопировано</div>
+<div class="toast" id="toast"></div>
 
 <script>
 const API = '';
-let selectedProfile = null;
-let selectedGoal = 'respond';
-let profiles = [];
-let history = [];
-let lastAudioFilename = '';
-let uploadedFiles = [];  // {type, filename, data_url?, text?}
+
+// ─── State ──────────────────────────────────────────────────────────────
+
+let sessionId = crypto.randomUUID();
+let chatHistory = [];  // {role, content} for API
+let attachedFiles = []; // {type, filename, text?}
+let sending = false;
 
 // ─── Init ───────────────────────────────────────────────────────────────
 
 async function init() {
-  try {
-    const r = await fetch(API + '/api/profiles');
-    const d = await r.json();
-    profiles = d.profiles || [];
-    renderProfiles();
-    if (profiles.length === 1) selectProfile(profiles[0].id);
-  } catch(e) {
-    document.getElementById('profileList').innerHTML =
-      '<div style="font-size:12px;color:#c00;">Ошибка загрузки профилей</div>';
-  }
-  await loadHistory();
+  loadSessions();
+  document.getElementById('chatInput').focus();
 }
 
-function renderProfiles() {
-  const el = document.getElementById('profileList');
-  if (!profiles.length) {
-    el.innerHTML = '<div style="font-size:12px;color:#aaa;">Нет доступных профилей</div>';
-    return;
-  }
-  el.innerHTML = profiles.map(p => `
-    <div class="profile-card card" id="pc-${p.id}" onclick="selectProfile('${p.id}')">
-      <div class="profile-name">${p.display_name}</div>
-      ${p.role ? `<div class="profile-role">${p.role}</div>` : ''}
-    </div>
-  `).join('');
-}
+// ─── Sessions ───────────────────────────────────────────────────────────
 
-async function selectProfile(id) {
-  selectedProfile = id;
-  document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('selected'));
-  const card = document.getElementById('pc-' + id);
-  if (card) card.classList.add('selected');
+async function loadSessions() {
   try {
-    const r = await fetch(API + `/api/profiles/${id}/guide`);
+    const r = await fetch(API + '/api/communicate/sessions?limit=30');
     const d = await r.json();
-    if (d.guide) showGuide(d.display_name, d.guide);
+    renderSessions(d.sessions || []);
   } catch(e) {}
 }
 
-function showGuide(name, guideText) {
-  document.getElementById('guideName').textContent = name;
-  document.getElementById('guideCard').style.display = 'block';
-  const lines = guideText.split('\n').filter(l => l.trim().startsWith('- **'));
-  const tips = lines.map(l => {
-    const clean = l.replace(/^-\s*/, '').trim();
-    return `<div class="guide-tip">${clean}</div>`;
+function renderSessions(sessions) {
+  const el = document.getElementById('sessionList');
+  if (!sessions.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:#ccc;font-size:12px;">Нет кейсов</div>';
+    return;
+  }
+  el.innerHTML = sessions.map(s => {
+    const dt = s.last_activity
+      ? new Date(s.last_activity).toLocaleString('ru', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+      : '';
+    const active = s.session_id === sessionId ? ' active' : '';
+    return `
+      <div class="session-item${active}" onclick="loadSession('${s.session_id}')">
+        <div class="session-preview">${escHtml(s.preview || 'Кейс')}</div>
+        <div class="session-meta">${dt} &middot; ${s.message_count} сообщ.</div>
+      </div>`;
+  }).join('');
+}
+
+function newSession() {
+  sessionId = crypto.randomUUID();
+  chatHistory = [];
+  attachedFiles = [];
+  const inner = document.getElementById('messagesInner');
+  // Remove all messages but keep empty state and typing indicator
+  inner.querySelectorAll('.msg:not(.typing)').forEach(m => m.remove());
+  document.getElementById('emptyState').style.display = '';
+  document.getElementById('chatInput').focus();
+  // Update active state in sidebar
+  document.querySelectorAll('.session-item').forEach(s => s.classList.remove('active'));
+}
+
+async function loadSession(sid) {
+  // For now just switch to that session — full reload from DB would require
+  // a session-messages endpoint. Start fresh with that session_id.
+  sessionId = sid;
+  chatHistory = [];
+  const inner = document.getElementById('messagesInner');
+  inner.querySelectorAll('.msg:not(.typing)').forEach(m => m.remove());
+  document.getElementById('emptyState').style.display = 'none';
+  document.querySelectorAll('.session-item').forEach(s => s.classList.remove('active'));
+  // Mark active
+  document.querySelectorAll('.session-item').forEach(s => {
+    if (s.onclick.toString().includes(sid)) s.classList.add('active');
   });
-  document.getElementById('guideContent').innerHTML =
-    tips.slice(0, 8).join('') || '<div class="guide-tip">Руководство загружено</div>';
 }
 
-// ─── Tabs ───────────────────────────────────────────────────────────────
+// ─── Input handling ─────────────────────────────────────────────────────
 
-function switchCtx(tab) {
-  document.querySelectorAll('.ctx-tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.ctx-content').forEach(t => t.classList.remove('active'));
-  document.querySelector(`.ctx-content#ctx-${tab}`).classList.add('active');
-  const idx = {text: 0, audio: 1, file: 2}[tab];
-  document.querySelectorAll('.ctx-tab')[idx].classList.add('active');
-}
-
-// ─── Audio ──────────────────────────────────────────────────────────────
-
-async function onAudioFile(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const zone = document.getElementById('uploadZone');
-  zone.classList.add('done');
-  zone.innerHTML = `<div class="upload-icon">&#x2713;</div><div>${file.name}</div>
-    <div class="upload-hint">${(file.size/1024/1024).toFixed(1)} МБ</div>`;
-  const prog = document.getElementById('audioProgress');
-  prog.style.display = 'block';
-  prog.textContent = '⏳ Транскрибирую запись...';
-  lastAudioFilename = file.name;
-  const fd = new FormData();
-  fd.append('file', file);
-  try {
-    const r = await fetch(API + '/api/communicate/transcribe', { method: 'POST', body: fd });
-    const d = await r.json();
-    if (d.transcript) {
-      prog.textContent = `✓ Расшифровано (${Math.round(d.duration || 0)} сек)`;
-      document.getElementById('transcriptText').value = d.transcript;
-      document.getElementById('transcriptBox').style.display = 'block';
-    } else {
-      prog.textContent = '✗ ' + (d.detail || d.error || 'Ошибка');
-    }
-  } catch(e) {
-    prog.textContent = '✗ ' + e.message;
+function onKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    send();
   }
 }
 
-// ─── File upload (images, documents) ────────────────────────────────────
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
 
-async function onCtxFile(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const prog = document.getElementById('fileProgress');
-  prog.style.display = 'block';
-  prog.textContent = '⏳ Загружаю файл...';
+// ─── File attachment ────────────────────────────────────────────────────
 
-  const fd = new FormData();
-  fd.append('file', file);
-  try {
-    const r = await fetch(API + '/api/communicate/upload-file', { method: 'POST', body: fd });
-    const d = await r.json();
-    if (d.type === 'image') {
-      uploadedFiles.push({ type: 'image', filename: d.filename, data_url: d.data_url });
-      prog.textContent = `✓ Изображение загружено`;
-    } else if (d.type === 'document') {
-      uploadedFiles.push({ type: 'document', filename: d.filename, text: d.text });
-      document.getElementById('fileText').value = d.text.slice(0, 2000);
-      document.getElementById('fileTextBox').style.display = 'block';
-      prog.textContent = `✓ Документ загружен (${d.text.length} символов)`;
-    } else {
-      prog.textContent = '✗ ' + (d.detail || 'Неизвестный тип файла');
-      return;
+async function onFile(input) {
+  for (const file of input.files) {
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const r = await fetch(API + '/api/communicate/upload-file', { method: 'POST', body: fd });
+      const d = await r.json();
+      if (d.type === 'document') {
+        attachedFiles.push({ type: 'document', filename: d.filename, text: d.text });
+      } else if (d.type === 'image') {
+        attachedFiles.push({ type: 'image', filename: d.filename });
+      }
+    } catch(e) {
+      toast('Ошибка загрузки: ' + e.message);
     }
-    renderFileChips();
-  } catch(e) {
-    prog.textContent = '✗ ' + e.message;
   }
+  renderFileChips();
   input.value = '';
 }
 
 function renderFileChips() {
   const el = document.getElementById('fileChips');
-  el.innerHTML = uploadedFiles.map((f, i) => `
+  el.innerHTML = attachedFiles.map((f, i) => `
     <div class="file-chip">
-      ${f.type === 'image' ? '&#x1f5bc;' : '&#x1f4c4;'} ${f.filename}
-      <span class="remove" onclick="removeFile(${i})">&#x2716;</span>
+      ${f.type === 'image' ? '&#x1f5bc;' : '&#x1f4c4;'} ${escHtml(f.filename)}
+      <span class="x" onclick="removeFile(${i})">&#x2716;</span>
     </div>
   `).join('');
 }
 
-function removeFile(idx) {
-  uploadedFiles.splice(idx, 1);
+function removeFile(i) {
+  attachedFiles.splice(i, 1);
   renderFileChips();
 }
 
-// ─── Goal ───────────────────────────────────────────────────────────────
+// ─── Send ───────────────────────────────────────────────────────────────
 
-function pickGoal(el) {
-  document.querySelectorAll('.goal').forEach(g => g.classList.remove('active'));
-  el.classList.add('active');
-  selectedGoal = el.dataset.g;
-}
+async function send() {
+  const input = document.getElementById('chatInput');
+  let text = input.value.trim();
+  if (!text && !attachedFiles.length) return;
+  if (sending) return;
 
-// ─── Block toggle ───────────────────────────────────────────────────────
-
-function toggleBlock(cardId) {
-  document.getElementById(cardId).classList.toggle('open');
-}
-
-// ─── Generate ───────────────────────────────────────────────────────────
-
-async function generate() {
-  if (!selectedProfile) { alert('Выберите получателя слева'); return; }
-
-  // Gather context from active tab
-  const activeTab = document.querySelector('.ctx-content.active')?.id;
-  let context = '';
-  let contextType = 'text';
-
-  if (activeTab === 'ctx-audio') {
-    context = document.getElementById('transcriptText').value;
-    contextType = 'audio';
-  } else if (activeTab === 'ctx-file') {
-    // Combine file texts
-    context = uploadedFiles
-      .filter(f => f.type === 'document')
-      .map(f => `[Файл: ${f.filename}]\n${f.text}`)
-      .join('\n\n');
-    contextType = 'text';
-  } else {
-    context = document.getElementById('contextText').value;
+  // Append file contents to message
+  if (attachedFiles.length) {
+    const fileParts = attachedFiles
+      .filter(f => f.text)
+      .map(f => `[Файл: ${f.filename}]\n${f.text}`);
+    if (fileParts.length) {
+      text += '\n\n' + fileParts.join('\n\n');
+    }
+    const imageNames = attachedFiles.filter(f => f.type === 'image').map(f => f.filename);
+    if (imageNames.length) {
+      text += '\n\n[Прикреплены изображения: ' + imageNames.join(', ') + ']';
+    }
   }
 
-  if (!context.trim() && !uploadedFiles.some(f => f.type === 'image')) {
-    alert('Введите контекст, загрузите аудио или файл');
-    return;
-  }
+  // Add user message to UI
+  addUserMsg(input.value.trim(), attachedFiles.map(f => f.filename));
+  input.value = '';
+  input.style.height = 'auto';
+  attachedFiles = [];
+  renderFileChips();
 
-  const task = document.getElementById('taskInput').value || 'ответить на сообщение';
-
-  const btn = document.getElementById('btnGen');
-  const loading = document.getElementById('loading');
-  const results = document.getElementById('results');
-
-  btn.disabled = true;
-  loading.classList.add('show');
-  results.classList.remove('show');
+  // Show typing
+  sending = true;
+  document.getElementById('btnSend').disabled = true;
+  document.getElementById('typing').classList.add('show');
+  scrollToBottom();
 
   try {
-    const r = await fetch(API + '/api/communicate', {
+    const r = await fetch(API + '/api/communicate/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        profile_id: selectedProfile,
-        context, task,
-        goal: selectedGoal,
-        msg_type: 'email',
-        mode: 'strategic',
-        include_notes: true,
-        context_type: contextType,
-        audio_filename: contextType === 'audio' ? lastAudioFilename : '',
+        message: text,
+        history: chatHistory,
+        session_id: sessionId,
       }),
     });
     const d = await r.json();
 
-    if (d.blocks) {
-      renderBlocks(d.blocks);
-    } else if (d.message) {
-      // Fallback: v1 response
-      document.getElementById('block3msg').textContent = d.message;
-      document.getElementById('block3comment').textContent = '';
-      ['block1','block2','block4','block5'].forEach(b => {
-        document.getElementById(b).textContent = '';
-        document.getElementById(b + 'Card').style.display = 'none';
-      });
-    }
+    // Update history
+    chatHistory.push({ role: 'user', content: text });
+    const aiContent = d.raw || d.text || d.blocks?.message || '';
+    chatHistory.push({ role: 'assistant', content: aiContent });
 
-    // Third-party info
-    const tpInfo = document.getElementById('tpInfo');
-    if (d.third_parties_used && d.third_parties_used.length) {
-      tpInfo.style.display = 'block';
-      tpInfo.innerHTML = '&#x1f465; Обнаружены третьи стороны: <strong>' +
-        d.third_parties_used.join(', ') + '</strong> — их профили учтены в анализе';
-    } else {
-      tpInfo.style.display = 'none';
-    }
+    // Add AI message to UI
+    addAiMsg(d);
 
-    results.classList.add('show');
-    document.getElementById('block3Card').scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-    await loadHistory();
+    // Refresh sessions sidebar
+    loadSessions();
   } catch(e) {
-    alert('Ошибка: ' + e.message);
+    addAiError(e.message);
   } finally {
-    btn.disabled = false;
-    loading.classList.remove('show');
+    sending = false;
+    document.getElementById('btnSend').disabled = false;
+    document.getElementById('typing').classList.remove('show');
+    scrollToBottom();
+    input.focus();
   }
 }
 
-function renderBlocks(blocks) {
-  const names = {
-    block1: 'block1', block2: 'block2',
-    block4: 'block4', block5: 'block5',
-  };
+// ─── Render messages ────────────────────────────────────────────────────
 
-  // Blocks 1, 2, 4, 5 — text content
-  for (const [key, elId] of Object.entries(names)) {
-    const el = document.getElementById(elId);
-    const card = document.getElementById(elId + 'Card');
-    el.textContent = blocks[key] || '';
-    card.style.display = blocks[key] ? '' : 'none';
-    card.classList.remove('open');
+function addUserMsg(text, fileNames) {
+  document.getElementById('emptyState').style.display = 'none';
+
+  const div = document.createElement('div');
+  div.className = 'msg msg-user';
+  let content = escHtml(text);
+  if (fileNames && fileNames.length) {
+    content += '<div style="margin-top:6px;font-size:11px;opacity:0.7;">'
+      + fileNames.map(f => '&#x1f4ce; ' + escHtml(f)).join('&nbsp;&nbsp;')
+      + '</div>';
+  }
+  div.innerHTML = `<div class="msg-bubble">${content}</div>`;
+  insertBeforeTyping(div);
+  scrollToBottom();
+}
+
+function addAiMsg(data) {
+  const div = document.createElement('div');
+  div.className = 'msg msg-ai';
+
+  if (data.blocks) {
+    const b = data.blocks;
+    const tp = data.third_parties_used || [];
+    const cw = data.coalition_warnings || [];
+    const msgId = 'msg_' + Date.now();
+
+    let html = '<div class="msg-bubble">';
+
+    // Block 1: Analysis
+    if (b.block1) {
+      html += blockHtml('analysis', '&#x1f50d;', 'Анализ ситуации', b.block1, false, msgId + '_1');
+    }
+    // Block 2: Strategy
+    if (b.block2) {
+      html += blockHtml('strategy', '&#x1f3af;', 'Стратегия', b.block2, false, msgId + '_2');
+    }
+    // Block 3: Message (open)
+    if (b.message || b.block3) {
+      html += `<div class="block block-msg open" id="${msgId}_3">
+        <div class="block-head" onclick="toggleBlock('${msgId}_3')">
+          <span class="block-icon">&#x2709;</span>
+          <span class="block-label">Готовый текст</span>
+          <button class="btn-copy" onclick="event.stopPropagation();copyText('${msgId}_msg')">&#x1f4cb; Скопировать</button>
+          <span class="block-arrow">&#x25BC;</span>
+        </div>
+        <div class="block-body">
+          <div class="msg-text-box" id="${msgId}_msg">${escHtml(b.message || b.block3)}</div>
+          ${b.message_comment ? `<div class="msg-comment">${escHtml(b.message_comment)}</div>` : ''}
+        </div>
+      </div>`;
+    }
+    // Block 4: Why
+    if (b.block4) {
+      html += blockHtml('why', '&#x1f4a1;', 'Почему именно так', b.block4, false, msgId + '_4');
+    }
+    // Block 5: Fallback
+    if (b.block5) {
+      html += blockHtml('fallback', '&#x1f6a8;', 'Если не сработает', b.block5, false, msgId + '_5');
+    }
+    // Third parties
+    if (tp.length) {
+      html += `<div class="tp-badge">&#x26A0; Учтены профили: <strong>${escHtml(tp.join(', '))}</strong>`;
+      if (cw.length) html += ' &middot; <em>риск коалиции</em>';
+      html += '</div>';
+    }
+
+    html += '</div>';
+    div.innerHTML = html;
+  } else {
+    // Plain text response
+    div.innerHTML = `<div class="msg-bubble"><div class="ai-text">${escHtml(data.text || data.raw || '')}</div></div>`;
   }
 
-  // Block 3 — message + comment
-  document.getElementById('block3msg').textContent = blocks.message || blocks.block3 || '';
-  document.getElementById('block3comment').textContent = blocks.message_comment || '';
-  document.getElementById('block3Card').classList.add('open');
+  insertBeforeTyping(div);
+  scrollToBottom();
+}
+
+function addAiError(msg) {
+  const div = document.createElement('div');
+  div.className = 'msg msg-ai';
+  div.innerHTML = `<div class="msg-bubble"><div class="ai-text" style="color:${CSS.escape('var(--danger)')}">Ошибка: ${escHtml(msg)}</div></div>`;
+  insertBeforeTyping(div);
+}
+
+function blockHtml(cls, icon, label, text, isOpen, id) {
+  return `<div class="block block-${cls}${isOpen ? ' open' : ''}" id="${id}">
+    <div class="block-head" onclick="toggleBlock('${id}')">
+      <span class="block-icon">${icon}</span>
+      <span class="block-label">${label}</span>
+      <span class="block-arrow">&#x25BC;</span>
+    </div>
+    <div class="block-body">
+      <div class="block-text">${escHtml(text)}</div>
+    </div>
+  </div>`;
+}
+
+function toggleBlock(id) {
+  document.getElementById(id)?.classList.toggle('open');
+}
+
+function insertBeforeTyping(el) {
+  const typing = document.getElementById('typing');
+  typing.parentNode.insertBefore(el, typing);
+}
+
+function scrollToBottom() {
+  const m = document.getElementById('messages');
+  requestAnimationFrame(() => { m.scrollTop = m.scrollHeight; });
 }
 
 // ─── Copy ───────────────────────────────────────────────────────────────
 
-function copyMessage() {
-  const text = document.getElementById('block3msg').textContent;
-  navigator.clipboard.writeText(text).then(() => showToast('Текст скопирован'));
+function copyText(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => toast('Текст скопирован'));
 }
 
-function showToast(msg) {
+function toast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2000);
 }
 
-// ─── History ────────────────────────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────────────────
 
-async function loadHistory() {
-  try {
-    const r = await fetch(API + '/api/communications?limit=20');
-    const d = await r.json();
-    history = d.communications || [];
-    renderHistory();
-  } catch(e) {}
-}
-
-function renderHistory() {
-  const el = document.getElementById('historyList');
-  if (!history.length) {
-    el.innerHTML = '<div class="no-history">Пока пусто</div>';
-    return;
-  }
-  el.innerHTML = history.slice(0, 12).map(h => {
-    const dt = h.created_at
-      ? new Date(h.created_at).toLocaleString('ru', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
-      : '';
-    const icon = h.context_type === 'audio' ? '&#x1f3a4;' : '&#x2709;';
-    const mode = h.mode === 'strategic' ? '<span class="history-mode">v2</span>' : '';
-    return `
-      <div class="history-item" onclick="loadHistoryItem(${h.id})">
-        <div class="history-date">${icon} ${dt} ${mode} · ${h.profile_name || h.profile_id}</div>
-        <div class="history-preview">${h.task || h.preview || ''}</div>
-      </div>
-    `;
-  }).join('');
-}
-
-async function loadHistoryItem(id) {
-  try {
-    const r = await fetch(API + `/api/communications/${id}`);
-    const d = await r.json();
-
-    if (d.blocks) {
-      renderBlocks(d.blocks);
-    } else {
-      // V1 item
-      document.getElementById('block3msg').textContent = d.generated_message || '';
-      document.getElementById('block3comment').textContent = '';
-      ['block1','block2','block4','block5'].forEach(b => {
-        document.getElementById(b).textContent = '';
-        document.getElementById(b + 'Card').style.display = 'none';
-      });
-    }
-
-    document.getElementById('tpInfo').style.display = 'none';
-    document.getElementById('results').classList.add('show');
-    document.getElementById('block3Card').scrollIntoView({ behavior: 'smooth' });
-  } catch(e) {}
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
 }
 
 // ─── Start ──────────────────────────────────────────────────────────────
