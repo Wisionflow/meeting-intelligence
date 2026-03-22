@@ -38,7 +38,7 @@ from src.storage import (
     list_meetings, count_meetings, save_processing_status, update_meeting_status,
 )
 from src.report import generate_html_report
-from src.communicator import adapt_message, strategic_analysis, chat_analysis
+from src.communicator import adapt_message, strategic_analysis, chat_analysis, rewrite_tone
 from src.profiles import (
     list_profiles, get_guide, get_full_profile,
     setup_tables as setup_profile_tables,
@@ -680,6 +680,64 @@ async def api_list_sessions(user_id: str = "", limit: int = 20):
         d["preview"] = fm[:80] + ("..." if len(fm) > 80 else "")
         sessions.append(d)
     return {"sessions": sessions}
+
+
+# ─── Tone rewrite endpoint ────────────────────────────────────────────────
+
+class ToneRequest(BaseModel):
+    current_text: str
+    tone: str  # softer | harder | formal | shorter
+    context_summary: str = ""
+    session_id: str = ""
+
+
+@app.post("/api/communicate/tone")
+async def api_tone(req: ToneRequest):
+    """Rewrite Block 3 text with a different tone."""
+    if req.tone not in ("softer", "harder", "formal", "shorter"):
+        raise HTTPException(400, f"Invalid tone: {req.tone}. Use: softer, harder, formal, shorter")
+
+    result = await rewrite_tone(
+        current_text=req.current_text,
+        tone=req.tone,
+        context_summary=req.context_summary,
+    )
+    return result
+
+
+# ─── Recipient profile lookup ─────────────────────────────────────────────
+
+@app.get("/api/communicate/profile-card/{profile_id}")
+async def api_profile_card(profile_id: str):
+    """Get mini-card data for recipient display."""
+    data = await get_full_profile(profile_id)
+    if not data:
+        raise HTTPException(404, "Profile not found")
+
+    # Extract DISC type and key traits from profile_data
+    profile_text = data.get("profile_data", "")
+    disc_type = ""
+    key_trait = ""
+
+    # Parse DISC type
+    import re
+    m = re.search(r"Основной DISC-тип:\*?\*?\s*(.+?)(?:\n|$)", profile_text)
+    if m:
+        disc_type = m.group(1).strip().split("—")[0].strip()
+
+    # Parse one-liner description
+    m2 = re.search(r"Основной DISC-тип:.*?—\s*(.+?)(?:\n|$)", profile_text)
+    if m2:
+        key_trait = m2.group(1).strip()[:80]
+
+    return {
+        "id": data["id"],
+        "display_name": data.get("display_name", ""),
+        "role": data.get("role", ""),
+        "department": data.get("department", ""),
+        "disc_type": disc_type,
+        "key_trait": key_trait,
+    }
 
 
 # ─── Entry point ────────────────────────────────────────────────────────────

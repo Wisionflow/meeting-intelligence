@@ -479,3 +479,80 @@ async def chat_analysis(
         "coalition_warnings": coalition_warnings,
         "tokens": tokens,
     }
+
+
+# ─── Tone rewrite ────────────────────────────────────────────────────────────
+
+TONE_LABELS = {
+    "softer": "мягче — снизь давление, добавь вежливости, смягчи ультиматумы",
+    "harder": "жёстче — усиль давление, убери смягчения, добавь срочности",
+    "formal": "формальнее — деловой тон, убери разговорные обороты",
+    "shorter": "короче — убери лишнее, оставь только суть, максимум 5-6 строк",
+}
+
+TONE_PROMPT = """Перепиши это деловое письмо {tone_instruction}.
+
+Сохрани:
+- Смысл и структуру аргументов
+- Адаптацию под профиль получателя
+- Все конкретные факты, цифры, имена
+
+Правила:
+- Пиши как живой человек, НЕ как ИИ
+- Никакого markdown — чистый текст
+- Без шаблонных фраз ("в рамках", "хотелось бы отметить")
+- Если есть "Тема:" — сохрани
+
+КОНТЕКСТ СИТУАЦИИ:
+{context_summary}
+
+ТЕКУЩИЙ ТЕКСТ ПИСЬМА:
+{current_text}
+
+Верни ТОЛЬКО новый текст письма, без пояснений и без блоков."""
+
+
+async def rewrite_tone(
+    current_text: str,
+    tone: str,
+    context_summary: str = "",
+) -> dict:
+    """Rewrite message text with a different tone.
+
+    Args:
+        current_text: current Block 3 text
+        tone: softer | harder | formal | shorter
+        context_summary: brief situation context
+
+    Returns:
+        {"message": "rewritten text", "tokens": {"input": N, "output": N}}
+    """
+    if not ANTHROPIC_API_KEY:
+        raise RuntimeError("ANTHROPIC_API_KEY not set")
+
+    tone_instruction = TONE_LABELS.get(tone, tone)
+
+    prompt = TONE_PROMPT.format(
+        tone_instruction=tone_instruction,
+        context_summary=context_summary[:3000] if context_summary else "(не указан)",
+        current_text=current_text,
+    )
+
+    model = os.environ.get("ANTHROPIC_MODEL", ANTHROPIC_MODEL)
+    log.info("Tone rewrite: tone=%s, model=%s", tone, model)
+
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    response = client.messages.create(
+        model=model,
+        max_tokens=2048,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    result_text = response.content[0].text.strip()
+    tokens = {
+        "input": response.usage.input_tokens,
+        "output": response.usage.output_tokens,
+    }
+
+    log.info("Tone rewrite complete: %d chars, tone=%s", len(result_text), tone)
+    return {"message": result_text, "tokens": tokens}
