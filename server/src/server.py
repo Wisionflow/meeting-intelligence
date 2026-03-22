@@ -26,11 +26,12 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Form
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Form, Request
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
 from pydantic import BaseModel
 
 from src import config
+from src.auth import get_current_user, check_credentials, create_session_cookie, COOKIE_NAME
 from src.transcriber import transcribe, format_transcript
 from src.analyzer import analyze
 from src.storage import (
@@ -100,6 +101,40 @@ async def health():
 
     status = 200 if all(v in ("ok", "set") for v in checks.values()) else 503
     return JSONResponse(checks, status_code=status)
+
+
+# ─── Auth ───────────────────────────────────────────────────────────────────
+
+def _require_user(request: Request) -> str:
+    """Extract user_id from session cookie or raise 401/redirect."""
+    user_id = get_current_user(request)
+    if not user_id:
+        raise HTTPException(401, "Not authenticated")
+    return user_id
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page():
+    html_path = Path(config.TEMPLATES_DIR) / "login.html"
+    return HTMLResponse(html_path.read_text(encoding="utf-8"))
+
+
+@app.post("/login")
+async def login_submit(username: str = Form(...), password: str = Form(...)):
+    if check_credentials(username, password):
+        resp = RedirectResponse("/communicate", status_code=303)
+        create_session_cookie(resp, username)
+        log.info("Login OK: %s", username)
+        return resp
+    log.warning("Login FAILED: %s", username)
+    return RedirectResponse("/login?error=1", status_code=303)
+
+
+@app.get("/logout")
+async def logout():
+    resp = RedirectResponse("/login", status_code=303)
+    resp.delete_cookie(COOKIE_NAME)
+    return resp
 
 
 # ─── Upload ─────────────────────────────────────────────────────────────────
@@ -237,23 +272,31 @@ async def api_get_report(meeting_id: int):
 # ─── UI page ────────────────────────────────────────────────────────────────
 
 @app.get("/communicate", response_class=HTMLResponse)
-async def communicate_page():
+async def communicate_page(request: Request):
+    user_id = get_current_user(request)
+    if not user_id:
+        return RedirectResponse("/login", status_code=303)
     html_path = Path(config.TEMPLATES_DIR) / "communicate.html"
     if not html_path.exists():
         raise HTTPException(404, "Communication page not found")
-    return HTMLResponse(html_path.read_text(encoding="utf-8"))
+    # Inject user_id into page so JS can use it
+    html = html_path.read_text(encoding="utf-8")
+    html = html.replace("</head>", f'<script>window.__USER_ID = "{user_id}";</script>\n</head>')
+    return HTMLResponse(html)
 
 
 # ─── Profiles ───────────────────────────────────────────────────────────────
 
 @app.get("/api/profiles")
-async def api_list_profiles(user_id: str | None = None):
+async def api_list_profiles(request: Request):
+    user_id = _require_user(request)
     profiles = await list_profiles(user_id)
     return {"profiles": profiles}
 
 
 @app.get("/api/profiles/{profile_id}/guide")
-async def api_get_guide(profile_id: str, user_id: str | None = None):
+async def api_get_guide(profile_id: str, request: Request):
+    user_id = _require_user(request)
     data = await get_guide(profile_id, user_id)
     if not data:
         raise HTTPException(404, "Profile not found or access denied")
@@ -302,8 +345,10 @@ async def _detect_third_parties(
 
 
 @app.post("/api/communicate")
-async def api_communicate(req: CommunicateRequest):
-    guide_data = await get_guide(req.profile_id)
+async def api_communicate(req: CommunicateRequest, request: Request):
+    user_id = _require_user(request)
+    req.user_id = user_id
+    guide_data = await get_guide(req.profile_id, user_id)
     if not guide_data:
         raise HTTPException(404, f"Profile '{req.profile_id}' not found")
 
@@ -420,7 +465,8 @@ async def api_communicate(req: CommunicateRequest):
 # ─── Communication history ──────────────────────────────────────────────
 
 @app.get("/api/communications")
-async def api_list_communications(user_id: str = "", limit: int = 30, offset: int = 0):
+async def api_list_communications(request: Request, limit: int = 30, offset: int = 0):
+    user_id = _require_user(request)
     pool = await get_pool()
     if user_id:
         rows = await pool.fetch(
@@ -478,7 +524,8 @@ async def api_get_communication(comm_id: int):
 # ─── Transcribe audio for context ───────────────────────────────────────────
 
 @app.post("/api/communicate/transcribe")
-async def api_transcribe_for_context(file: UploadFile = File(...)):
+async def api_transcribe_for_context(request: Request, file: UploadFile = File(...)):
+    _require_user(request)
     """Transcribe audio file and return text for communication context."""
     ext = Path(file.filename).suffix.lower()
     if ext not in config.AUDIO_EXTENSIONS:
@@ -510,12 +557,13 @@ DOC_EXTENSIONS = {".txt", ".md", ".csv", ".json", ".xml", ".html"}
 
 
 @app.post("/api/communicate/upload-file")
-async def api_upload_context_file(file: UploadFile = File(...)):
+async def api_upload_context_file(request: Request, file: UploadFile = File(...)):
     """Upload image or document to use as communication context.
 
     Images: saved and returned as base64 data URL for Claude vision.
     Documents: text extracted and returned.
     """
+    _require_user(request)
     import base64
 
     ext = Path(file.filename).suffix.lower()
@@ -593,8 +641,10 @@ async def _detect_profiles_in_text(text: str) -> list[dict]:
 
 
 @app.post("/api/communicate/chat")
-async def api_chat(req: ChatRequest):
+async def api_chat(req: ChatRequest, request: Request):
     """Chat-style communication analysis. User writes naturally."""
+    user_id = _require_user(request)
+    req.user_id = user_id
 
     # Detect profiles in current message + recent history
     search_text = req.message
@@ -652,7 +702,8 @@ async def api_chat(req: ChatRequest):
 
 
 @app.get("/api/communicate/sessions")
-async def api_list_sessions(user_id: str = "", limit: int = 20):
+async def api_list_sessions(request: Request, limit: int = 20):
+    user_id = _require_user(request)
     """List chat sessions for sidebar."""
     pool = await get_pool()
     rows = await pool.fetch(
@@ -692,7 +743,8 @@ class ToneRequest(BaseModel):
 
 
 @app.post("/api/communicate/tone")
-async def api_tone(req: ToneRequest):
+async def api_tone(req: ToneRequest, request: Request):
+    _require_user(request)
     """Rewrite Block 3 text with a different tone."""
     if req.tone not in ("softer", "harder", "formal", "shorter"):
         raise HTTPException(400, f"Invalid tone: {req.tone}. Use: softer, harder, formal, shorter")
@@ -708,7 +760,8 @@ async def api_tone(req: ToneRequest):
 # ─── Recipient profile lookup ─────────────────────────────────────────────
 
 @app.get("/api/communicate/profile-card/{profile_id}")
-async def api_profile_card(profile_id: str):
+async def api_profile_card(profile_id: str, request: Request):
+    _require_user(request)
     """Get mini-card data for recipient display."""
     data = await get_full_profile(profile_id)
     if not data:

@@ -387,7 +387,11 @@
     <h1>VisionFlow</h1>
     <span class="sub">Коммуникатор</span>
   </div>
-  <span class="v-badge">v2</span>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="v-badge">v2</span>
+    <span style="font-size:12px;opacity:0.7;" id="userLabel"></span>
+    <a href="/logout" style="font-size:11px;color:rgba(255,255,255,0.5);text-decoration:none;">Выйти</a>
+  </div>
 </div>
 
 <div class="app">
@@ -480,6 +484,16 @@
 
 <script>
 const API = '';
+const USER_ID = window.__USER_ID || '';
+document.getElementById('userLabel').textContent = USER_ID;
+
+// Wrap fetch to handle 401 → redirect to login
+const _origFetch = window.fetch;
+window.fetch = async (...args) => {
+  const r = await _origFetch(...args);
+  if (r.status === 401) { location.href = '/login'; }
+  return r;
+};
 
 // ─── State ──────────────────────────────────────────────────────────────
 

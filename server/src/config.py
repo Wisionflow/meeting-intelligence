@@ -62,3 +62,16 @@ WHISPER_LANGUAGE = os.getenv("WHISPER_LANGUAGE", "ru")
 # ─── Audio ───────────────────────────────────────────────────────────────────
 
 AUDIO_EXTENSIONS = {".m4a", ".mp3", ".wav", ".ogg", ".flac", ".mp4", ".aac", ".wma", ".webm"}
+
+# ─── Auth ──────────────────────────────────────────────────────────────────
+
+# Format: "username:password,username2:password2"
+_auth_raw = os.getenv("AUTH_USERS", "")
+AUTH_USERS: dict[str, str] = {}
+for pair in _auth_raw.split(","):
+    pair = pair.strip()
+    if ":" in pair:
+        u, p = pair.split(":", 1)
+        AUTH_USERS[u.strip()] = p.strip()
+
+SESSION_SECRET = os.getenv("SESSION_SECRET", "visionflow-default-secret-change-me")
