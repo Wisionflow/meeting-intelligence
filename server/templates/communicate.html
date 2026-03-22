@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VisionFlow — Коммуникации</title>
+<title>VisionFlow — Коммуникации v2</title>
 <style>
   :root {
     --primary: #006699;
@@ -18,6 +18,10 @@
     --success-bg: #f0faf0;
     --warn: #c48000;
     --warn-bg: #fef8ec;
+    --info: #2563eb;
+    --info-bg: #eff6ff;
+    --danger: #dc2626;
+    --danger-bg: #fef2f2;
     --radius: 10px;
   }
 
@@ -34,28 +38,25 @@
     background: var(--primary); color: #fff;
     padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
   }
-  .header-left { display: flex; align-items: center; gap: 12px; }
   .header h1 { font-size: 17px; font-weight: 600; letter-spacing: 0.3px; }
   .header .subtitle { font-size: 12px; opacity: 0.75; }
-  .header-right { display: flex; align-items: center; gap: 12px; }
-  .user-badge {
-    background: rgba(255,255,255,0.15); padding: 4px 12px; border-radius: 16px;
-    font-size: 12px;
+  .header .badge-v2 {
+    background: rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 600;
   }
 
   /* ─── Layout ─── */
   .layout {
-    max-width: 1100px; margin: 0 auto; padding: 20px 16px;
-    display: grid; grid-template-columns: 280px 1fr; gap: 20px;
+    max-width: 1140px; margin: 0 auto; padding: 20px 16px;
+    display: grid; grid-template-columns: 260px 1fr; gap: 20px;
   }
-
   @media (max-width: 768px) {
     .layout { grid-template-columns: 1fr; }
     .sidebar { order: 2; }
   }
 
   /* ─── Sidebar ─── */
-  .sidebar { display: flex; flex-direction: column; gap: 16px; }
+  .sidebar { display: flex; flex-direction: column; gap: 14px; }
 
   .card {
     background: var(--card); border-radius: var(--radius); padding: 16px;
@@ -67,17 +68,13 @@
     margin-bottom: 10px;
   }
 
-  /* Profile card */
-  .profile-card { cursor: pointer; transition: all 0.15s; }
+  .profile-card { cursor: pointer; transition: all 0.15s; margin-bottom: 6px; padding: 10px 12px; }
   .profile-card:hover { border-color: var(--primary); }
   .profile-card.selected { border-color: var(--primary); background: var(--primary-light); }
   .profile-name { font-size: 14px; font-weight: 600; }
   .profile-role { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
-  /* Guide tips */
-  .guide-panel {
-    max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
-  }
+  .guide-panel { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
   .guide-panel.open { max-height: 600px; overflow-y: auto; }
   .guide-tip {
     font-size: 12px; line-height: 1.5; padding: 6px 0;
@@ -85,18 +82,25 @@
   }
   .guide-tip:last-child { border-bottom: none; }
   .guide-tip strong { color: var(--primary-dark); }
-  .guide-toggle {
-    font-size: 12px; color: var(--primary); cursor: pointer;
-    margin-top: 8px; display: flex; align-items: center; gap: 4px;
-  }
 
-  /* ─── Main area ─── */
-  .main { display: flex; flex-direction: column; gap: 16px; }
-
-  /* Context input */
-  .context-tabs {
-    display: flex; gap: 0; margin-bottom: 10px;
+  .history-item {
+    padding: 8px 0; border-bottom: 1px solid #f0f0f0;
+    cursor: pointer; font-size: 12px;
   }
+  .history-item:hover { color: var(--primary); }
+  .history-item:last-child { border-bottom: none; }
+  .history-date { color: var(--text-muted); font-size: 11px; }
+  .history-preview { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .history-mode {
+    display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 8px;
+    background: var(--info-bg); color: var(--info);
+  }
+  .no-history { font-size: 12px; color: #aaa; text-align: center; padding: 12px; }
+
+  /* ─── Main ─── */
+  .main { display: flex; flex-direction: column; gap: 14px; }
+
+  .context-tabs { display: flex; gap: 0; margin-bottom: 10px; }
   .ctx-tab {
     flex: 1; padding: 9px 0; text-align: center;
     border: 1px solid var(--border); background: #fafafa;
@@ -125,7 +129,7 @@
 
   label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; }
 
-  /* Upload */
+  /* Upload zones */
   .upload-zone {
     border: 2px dashed var(--border); border-radius: 8px;
     padding: 28px; text-align: center; cursor: pointer;
@@ -136,7 +140,17 @@
   .upload-icon { font-size: 28px; margin-bottom: 4px; }
   .upload-hint { font-size: 12px; }
 
-  /* Goal pills */
+  /* File chips */
+  .file-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .file-chip {
+    display: flex; align-items: center; gap: 4px;
+    padding: 4px 10px; background: var(--primary-light); border-radius: 12px;
+    font-size: 12px; color: var(--primary-dark);
+  }
+  .file-chip .remove { cursor: pointer; font-size: 14px; opacity: 0.6; }
+  .file-chip .remove:hover { opacity: 1; }
+
+  /* Goals */
   .goals { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
   .goal {
     padding: 5px 14px; border: 1px solid var(--border); border-radius: 20px;
@@ -158,74 +172,93 @@
   /* Loading */
   .loading { text-align: center; padding: 20px; color: var(--text-muted); display: none; }
   .loading.show { display: block; }
-  .loading-dots::after {
-    content: ''; animation: dots 1.5s steps(4, end) infinite;
+  .loading-dots::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
+  @keyframes dots { 0%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} }
+
+  /* ─── 5-Block Result ─── */
+  .results { display: none; flex-direction: column; gap: 10px; }
+  .results.show { display: flex; }
+
+  .block-card {
+    border-radius: var(--radius); overflow: hidden;
+    border: 1px solid var(--border); background: var(--card);
   }
-  @keyframes dots {
-    0% { content: ''; }
-    25% { content: '.'; }
-    50% { content: '..'; }
-    75% { content: '...'; }
+  .block-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; cursor: pointer; user-select: none;
+    transition: background 0.15s;
+  }
+  .block-header:hover { background: #f8f9fa; }
+  .block-icon { font-size: 18px; flex-shrink: 0; }
+  .block-title { font-size: 13px; font-weight: 600; flex: 1; }
+  .block-toggle { font-size: 12px; color: var(--text-muted); transition: transform 0.2s; }
+  .block-card.open .block-toggle { transform: rotate(180deg); }
+
+  .block-body {
+    max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
+  }
+  .block-card.open .block-body { max-height: 2000px; }
+  .block-content {
+    padding: 0 16px 16px; font-size: 14px; line-height: 1.7;
+    white-space: pre-wrap;
   }
 
-  /* Result */
-  .result-card { display: none; }
-  .result-card.show { display: block; }
+  /* Block colors */
+  .block-analysis .block-header { border-left: 4px solid var(--info); }
+  .block-strategy .block-header { border-left: 4px solid var(--success); }
+  .block-message .block-header { border-left: 4px solid var(--primary); background: var(--primary-light); }
+  .block-explanation .block-header { border-left: 4px solid var(--warn); }
+  .block-fallback .block-header { border-left: 4px solid var(--danger); }
 
-  .result-message {
+  /* Block 3 special */
+  .message-text {
     background: #f8faf8; border: 1px solid #c8dcc8; border-radius: 8px;
     padding: 16px; font-size: 14px; line-height: 1.65;
-    white-space: pre-wrap; position: relative;
+    white-space: pre-wrap;
+  }
+  .message-comment {
+    margin-top: 10px; padding: 10px; font-size: 12px;
+    color: var(--text-muted); border-top: 1px solid #e8e8e8;
+    font-style: italic;
   }
 
-  .result-notes {
-    background: var(--warn-bg); border: 1px solid #e8d8b0; border-radius: 8px;
-    padding: 12px; font-size: 12px; color: #7a6530; margin-top: 10px;
-    display: none;
-  }
-  .result-notes.show { display: block; }
-
-  .result-actions {
-    display: flex; gap: 8px; margin-top: 10px; align-items: center;
+  /* Action buttons */
+  .block-actions {
+    display: flex; gap: 8px; padding: 0 16px 14px;
   }
   .btn-action {
     padding: 7px 16px; border: 1px solid var(--border); border-radius: 6px;
     font-size: 13px; cursor: pointer; background: #fff; transition: all 0.15s;
   }
   .btn-action:hover { background: #f0f0f0; }
-  .btn-action.copy { border-color: var(--success); color: var(--success); }
+  .btn-action.copy { border-color: var(--success); color: var(--success); font-weight: 600; }
   .btn-action.copy:hover { background: var(--success-bg); }
+
+  /* Third-party badge */
+  .tp-badge {
+    display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px;
+    background: var(--warn-bg); color: var(--warn); margin-left: 8px;
+  }
 
   .toast {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
     background: #333; color: #fff; padding: 10px 24px; border-radius: 8px;
     font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+    z-index: 100;
   }
   .toast.show { opacity: 1; }
-
-  /* History */
-  .history-item {
-    padding: 8px 0; border-bottom: 1px solid #f0f0f0;
-    cursor: pointer; font-size: 12px;
-  }
-  .history-item:hover { color: var(--primary); }
-  .history-item:last-child { border-bottom: none; }
-  .history-date { color: var(--text-muted); font-size: 11px; }
-  .history-preview { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .no-history { font-size: 12px; color: #aaa; text-align: center; padding: 12px; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="header-left">
-    <div>
-      <h1>VisionFlow</h1>
-      <div class="subtitle">Коммуникационный ассистент</div>
-    </div>
+  <div>
+    <h1>VisionFlow</h1>
+    <div class="subtitle">Стратегический коммуникационный гид</div>
   </div>
-  <div class="header-right">
-    <div class="user-badge" id="userBadge"></div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="badge-v2">v2</span>
+    <div id="userBadge" style="font-size:12px;opacity:0.8;"></div>
   </div>
 </div>
 
@@ -234,26 +267,19 @@
   <!-- ─── Sidebar ─── -->
   <div class="sidebar">
 
-    <!-- Recipients -->
     <div class="card">
       <div class="card-title">Кому пишем</div>
-      <div id="profileList">
-        <div style="font-size:12px; color:#aaa;">Загрузка...</div>
-      </div>
+      <div id="profileList"><div style="font-size:12px;color:#aaa;">Загрузка...</div></div>
     </div>
 
-    <!-- Guide -->
     <div class="card" id="guideCard" style="display:none;">
       <div class="card-title">Как общаться с <span id="guideName"></span></div>
       <div id="guideContent" class="guide-panel open"></div>
     </div>
 
-    <!-- History -->
     <div class="card">
       <div class="card-title">История</div>
-      <div id="historyList">
-        <div class="no-history">Пока пусто</div>
-      </div>
+      <div id="historyList"><div class="no-history">Пока пусто</div></div>
     </div>
   </div>
 
@@ -266,24 +292,40 @@
 
       <div class="context-tabs">
         <div class="ctx-tab active" onclick="switchCtx('text')">Переписка</div>
-        <div class="ctx-tab" onclick="switchCtx('audio')">Запись разговора</div>
+        <div class="ctx-tab" onclick="switchCtx('audio')">Запись</div>
+        <div class="ctx-tab" onclick="switchCtx('file')">Файл</div>
       </div>
 
       <div id="ctx-text" class="ctx-content active">
-        <textarea id="contextText" placeholder="Вставьте переписку из почты или чата. Можно скопировать всю цепочку писем целиком — система разберётся."></textarea>
+        <textarea id="contextText" placeholder="Вставьте переписку из почты или чата. Можно скопировать всю цепочку писем — система разберётся."></textarea>
       </div>
 
       <div id="ctx-audio" class="ctx-content">
         <div id="uploadZone" class="upload-zone" onclick="document.getElementById('audioFile').click()">
-          <div class="upload-icon">🎙</div>
+          <div class="upload-icon">&#x1f3a4;</div>
           <div>Загрузить запись разговора</div>
           <div class="upload-hint">m4a, mp3, wav — до 25 МБ</div>
         </div>
         <input type="file" id="audioFile" accept=".m4a,.mp3,.wav,.ogg,.flac,.aac,.wma,.webm" style="display:none" onchange="onAudioFile(this)">
-        <div id="audioProgress" style="display:none; font-size:12px; color:var(--text-muted); margin-top:8px;"></div>
-        <div id="transcriptBox" style="display:none; margin-top:10px;">
+        <div id="audioProgress" style="display:none;font-size:12px;color:var(--text-muted);margin-top:8px;"></div>
+        <div id="transcriptBox" style="display:none;margin-top:10px;">
           <label>Расшифровка</label>
-          <textarea id="transcriptText" style="min-height:120px; font-size:13px; background:#fafafa;" readonly></textarea>
+          <textarea id="transcriptText" style="min-height:120px;font-size:13px;background:#fafafa;" readonly></textarea>
+        </div>
+      </div>
+
+      <div id="ctx-file" class="ctx-content">
+        <div id="fileUploadZone" class="upload-zone" onclick="document.getElementById('ctxFile').click()">
+          <div class="upload-icon">&#x1f4ce;</div>
+          <div>Загрузить скриншот или документ</div>
+          <div class="upload-hint">png, jpg, txt, csv, md — до 10 МБ</div>
+        </div>
+        <input type="file" id="ctxFile" accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.txt,.md,.csv,.json,.xml,.html" style="display:none" onchange="onCtxFile(this)">
+        <div id="fileProgress" style="display:none;font-size:12px;color:var(--text-muted);margin-top:8px;"></div>
+        <div class="file-chips" id="fileChips"></div>
+        <div id="fileTextBox" style="display:none;margin-top:10px;">
+          <label>Содержимое файла</label>
+          <textarea id="fileText" style="min-height:100px;font-size:13px;background:#fafafa;" readonly></textarea>
         </div>
       </div>
     </div>
@@ -291,8 +333,8 @@
     <!-- Task -->
     <div class="card">
       <div class="card-title">Задача</div>
-      <label>Что нужно написать</label>
-      <input type="text" id="taskInput" placeholder="Например: ответить на его возражение по срокам отгрузки">
+      <label>Что нужно написать / какая ситуация</label>
+      <input type="text" id="taskInput" placeholder="Например: ответить на его уклонение по срокам, конфликт по переносам резервов">
 
       <label style="margin-top:10px;">Цель</label>
       <div class="goals">
@@ -300,29 +342,92 @@
         <div class="goal" data-g="request" onclick="pickGoal(this)">Попросить</div>
         <div class="goal" data-g="persuade" onclick="pickGoal(this)">Убедить</div>
         <div class="goal" data-g="inform" onclick="pickGoal(this)">Проинформировать</div>
+        <div class="goal" data-g="escalate" onclick="pickGoal(this)">Эскалация</div>
         <div class="goal" data-g="deescalate" onclick="pickGoal(this)">Снизить напряжение</div>
       </div>
     </div>
 
     <!-- Generate -->
     <button class="btn-generate" id="btnGen" onclick="generate()">
-      Подготовить сообщение
+      Стратегический анализ
     </button>
 
-    <!-- Loading -->
     <div class="loading" id="loading">
-      ⏳ Адаптирую под профиль получателя<span class="loading-dots"></span>
+      &#x23F3; Анализирую ситуацию через профили участников<span class="loading-dots"></span>
     </div>
 
-    <!-- Result -->
-    <div class="card result-card" id="resultCard">
-      <div class="card-title">Готово — скопируйте и отправьте</div>
-      <div class="result-message" id="resultMsg"></div>
-      <div class="result-notes" id="resultNotes"></div>
-      <div class="result-actions">
-        <button class="btn-action copy" onclick="copyMsg()">📋 Скопировать</button>
-        <button class="btn-action" onclick="generate()">🔄 Другой вариант</button>
+    <!-- 5-Block Results -->
+    <div class="results" id="results">
+
+      <div id="tpInfo" style="display:none;padding:8px 12px;background:var(--warn-bg);border-radius:8px;font-size:12px;color:var(--warn);"></div>
+
+      <!-- Block 1: Analysis -->
+      <div class="block-card block-analysis" id="block1Card">
+        <div class="block-header" onclick="toggleBlock('block1Card')">
+          <span class="block-icon">&#x1f50d;</span>
+          <span class="block-title">Анализ ситуации и людей</span>
+          <span class="block-toggle">&#9660;</span>
+        </div>
+        <div class="block-body">
+          <div class="block-content" id="block1"></div>
+        </div>
       </div>
+
+      <!-- Block 2: Strategy -->
+      <div class="block-card block-strategy" id="block2Card">
+        <div class="block-header" onclick="toggleBlock('block2Card')">
+          <span class="block-icon">&#x1f3af;</span>
+          <span class="block-title">Стратегия коммуникации</span>
+          <span class="block-toggle">&#9660;</span>
+        </div>
+        <div class="block-body">
+          <div class="block-content" id="block2"></div>
+        </div>
+      </div>
+
+      <!-- Block 3: Ready message (PRIMARY) -->
+      <div class="block-card block-message open" id="block3Card">
+        <div class="block-header" onclick="toggleBlock('block3Card')">
+          <span class="block-icon">&#x2709;</span>
+          <span class="block-title">Готовый текст — скопируйте и отправьте</span>
+          <span class="block-toggle">&#9660;</span>
+        </div>
+        <div class="block-body">
+          <div style="padding:0 16px 8px;">
+            <div class="message-text" id="block3msg"></div>
+            <div class="message-comment" id="block3comment"></div>
+          </div>
+          <div class="block-actions">
+            <button class="btn-action copy" onclick="copyMessage()">&#x1f4cb; Скопировать текст письма</button>
+            <button class="btn-action" onclick="generate()">&#x1f504; Другой вариант</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Block 4: Explanation -->
+      <div class="block-card block-explanation" id="block4Card">
+        <div class="block-header" onclick="toggleBlock('block4Card')">
+          <span class="block-icon">&#x1f4a1;</span>
+          <span class="block-title">Почему именно так</span>
+          <span class="block-toggle">&#9660;</span>
+        </div>
+        <div class="block-body">
+          <div class="block-content" id="block4"></div>
+        </div>
+      </div>
+
+      <!-- Block 5: Fallback -->
+      <div class="block-card block-fallback" id="block5Card">
+        <div class="block-header" onclick="toggleBlock('block5Card')">
+          <span class="block-icon">&#x1f6a8;</span>
+          <span class="block-title">Что делать если не сработает</span>
+          <span class="block-toggle">&#9660;</span>
+        </div>
+        <div class="block-body">
+          <div class="block-content" id="block5"></div>
+        </div>
+      </div>
+
     </div>
 
   </div>
@@ -337,6 +442,7 @@ let selectedGoal = 'respond';
 let profiles = [];
 let history = [];
 let lastAudioFilename = '';
+let uploadedFiles = [];  // {type, filename, data_url?, text?}
 
 // ─── Init ───────────────────────────────────────────────────────────────
 
@@ -361,8 +467,7 @@ function renderProfiles() {
     return;
   }
   el.innerHTML = profiles.map(p => `
-    <div class="profile-card card" id="pc-${p.id}" onclick="selectProfile('${p.id}')"
-         style="margin-bottom:8px; padding:10px 12px;">
+    <div class="profile-card card" id="pc-${p.id}" onclick="selectProfile('${p.id}')">
       <div class="profile-name">${p.display_name}</div>
       ${p.role ? `<div class="profile-role">${p.role}</div>` : ''}
     </div>
@@ -374,29 +479,21 @@ async function selectProfile(id) {
   document.querySelectorAll('.profile-card').forEach(c => c.classList.remove('selected'));
   const card = document.getElementById('pc-' + id);
   if (card) card.classList.add('selected');
-
-  // Load guide
   try {
     const r = await fetch(API + `/api/profiles/${id}/guide`);
     const d = await r.json();
-    if (d.guide) {
-      showGuide(d.display_name, d.guide);
-    }
+    if (d.guide) showGuide(d.display_name, d.guide);
   } catch(e) {}
 }
 
 function showGuide(name, guideText) {
   document.getElementById('guideName').textContent = name;
-  const gc = document.getElementById('guideCard');
-  gc.style.display = 'block';
-
-  // Parse guide into tips
+  document.getElementById('guideCard').style.display = 'block';
   const lines = guideText.split('\n').filter(l => l.trim().startsWith('- **'));
   const tips = lines.map(l => {
     const clean = l.replace(/^-\s*/, '').trim();
     return `<div class="guide-tip">${clean}</div>`;
   });
-
   document.getElementById('guideContent').innerHTML =
     tips.slice(0, 8).join('') || '<div class="guide-tip">Руководство загружено</div>';
 }
@@ -407,7 +504,8 @@ function switchCtx(tab) {
   document.querySelectorAll('.ctx-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.ctx-content').forEach(t => t.classList.remove('active'));
   document.querySelector(`.ctx-content#ctx-${tab}`).classList.add('active');
-  document.querySelectorAll('.ctx-tab')[tab === 'text' ? 0 : 1].classList.add('active');
+  const idx = {text: 0, audio: 1, file: 2}[tab];
+  document.querySelectorAll('.ctx-tab')[idx].classList.add('active');
 }
 
 // ─── Audio ──────────────────────────────────────────────────────────────
@@ -415,20 +513,16 @@ function switchCtx(tab) {
 async function onAudioFile(input) {
   const file = input.files[0];
   if (!file) return;
-
   const zone = document.getElementById('uploadZone');
   zone.classList.add('done');
-  zone.innerHTML = `<div class="upload-icon">✓</div><div>${file.name}</div>
+  zone.innerHTML = `<div class="upload-icon">&#x2713;</div><div>${file.name}</div>
     <div class="upload-hint">${(file.size/1024/1024).toFixed(1)} МБ</div>`;
-
   const prog = document.getElementById('audioProgress');
   prog.style.display = 'block';
   prog.textContent = '⏳ Транскрибирую запись...';
-
   lastAudioFilename = file.name;
   const fd = new FormData();
   fd.append('file', file);
-
   try {
     const r = await fetch(API + '/api/communicate/transcribe', { method: 'POST', body: fd });
     const d = await r.json();
@@ -444,6 +538,54 @@ async function onAudioFile(input) {
   }
 }
 
+// ─── File upload (images, documents) ────────────────────────────────────
+
+async function onCtxFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const prog = document.getElementById('fileProgress');
+  prog.style.display = 'block';
+  prog.textContent = '⏳ Загружаю файл...';
+
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch(API + '/api/communicate/upload-file', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.type === 'image') {
+      uploadedFiles.push({ type: 'image', filename: d.filename, data_url: d.data_url });
+      prog.textContent = `✓ Изображение загружено`;
+    } else if (d.type === 'document') {
+      uploadedFiles.push({ type: 'document', filename: d.filename, text: d.text });
+      document.getElementById('fileText').value = d.text.slice(0, 2000);
+      document.getElementById('fileTextBox').style.display = 'block';
+      prog.textContent = `✓ Документ загружен (${d.text.length} символов)`;
+    } else {
+      prog.textContent = '✗ ' + (d.detail || 'Неизвестный тип файла');
+      return;
+    }
+    renderFileChips();
+  } catch(e) {
+    prog.textContent = '✗ ' + e.message;
+  }
+  input.value = '';
+}
+
+function renderFileChips() {
+  const el = document.getElementById('fileChips');
+  el.innerHTML = uploadedFiles.map((f, i) => `
+    <div class="file-chip">
+      ${f.type === 'image' ? '&#x1f5bc;' : '&#x1f4c4;'} ${f.filename}
+      <span class="remove" onclick="removeFile(${i})">&#x2716;</span>
+    </div>
+  `).join('');
+}
+
+function removeFile(idx) {
+  uploadedFiles.splice(idx, 1);
+  renderFileChips();
+}
+
 // ─── Goal ───────────────────────────────────────────────────────────────
 
 function pickGoal(el) {
@@ -452,27 +594,50 @@ function pickGoal(el) {
   selectedGoal = el.dataset.g;
 }
 
+// ─── Block toggle ───────────────────────────────────────────────────────
+
+function toggleBlock(cardId) {
+  document.getElementById(cardId).classList.toggle('open');
+}
+
 // ─── Generate ───────────────────────────────────────────────────────────
 
 async function generate() {
   if (!selectedProfile) { alert('Выберите получателя слева'); return; }
 
-  const isAudio = document.querySelector('#ctx-audio.active');
-  const context = isAudio
-    ? document.getElementById('transcriptText').value
-    : document.getElementById('contextText').value;
+  // Gather context from active tab
+  const activeTab = document.querySelector('.ctx-content.active')?.id;
+  let context = '';
+  let contextType = 'text';
 
-  if (!context.trim()) { alert('Введите контекст переписки или загрузите аудио'); return; }
+  if (activeTab === 'ctx-audio') {
+    context = document.getElementById('transcriptText').value;
+    contextType = 'audio';
+  } else if (activeTab === 'ctx-file') {
+    // Combine file texts
+    context = uploadedFiles
+      .filter(f => f.type === 'document')
+      .map(f => `[Файл: ${f.filename}]\n${f.text}`)
+      .join('\n\n');
+    contextType = 'text';
+  } else {
+    context = document.getElementById('contextText').value;
+  }
+
+  if (!context.trim() && !uploadedFiles.some(f => f.type === 'image')) {
+    alert('Введите контекст, загрузите аудио или файл');
+    return;
+  }
 
   const task = document.getElementById('taskInput').value || 'ответить на сообщение';
 
   const btn = document.getElementById('btnGen');
   const loading = document.getElementById('loading');
-  const result = document.getElementById('resultCard');
+  const results = document.getElementById('results');
 
   btn.disabled = true;
   loading.classList.add('show');
-  result.classList.remove('show');
+  results.classList.remove('show');
 
   try {
     const r = await fetch(API + '/api/communicate', {
@@ -483,27 +648,39 @@ async function generate() {
         context, task,
         goal: selectedGoal,
         msg_type: 'email',
+        mode: 'strategic',
         include_notes: true,
-        context_type: isAudio ? 'audio' : 'text',
-        audio_filename: isAudio ? lastAudioFilename : '',
+        context_type: contextType,
+        audio_filename: contextType === 'audio' ? lastAudioFilename : '',
       }),
     });
     const d = await r.json();
 
-    document.getElementById('resultMsg').textContent = d.message || 'Ошибка';
-
-    const notes = document.getElementById('resultNotes');
-    if (d.notes) {
-      notes.textContent = d.notes;
-      notes.classList.add('show');
-    } else {
-      notes.classList.remove('show');
+    if (d.blocks) {
+      renderBlocks(d.blocks);
+    } else if (d.message) {
+      // Fallback: v1 response
+      document.getElementById('block3msg').textContent = d.message;
+      document.getElementById('block3comment').textContent = '';
+      ['block1','block2','block4','block5'].forEach(b => {
+        document.getElementById(b).textContent = '';
+        document.getElementById(b + 'Card').style.display = 'none';
+      });
     }
 
-    result.classList.add('show');
-    result.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Third-party info
+    const tpInfo = document.getElementById('tpInfo');
+    if (d.third_parties_used && d.third_parties_used.length) {
+      tpInfo.style.display = 'block';
+      tpInfo.innerHTML = '&#x1f465; Обнаружены третьи стороны: <strong>' +
+        d.third_parties_used.join(', ') + '</strong> — их профили учтены в анализе';
+    } else {
+      tpInfo.style.display = 'none';
+    }
 
-    // Reload history from server
+    results.classList.add('show');
+    document.getElementById('block3Card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
     await loadHistory();
   } catch(e) {
     alert('Ошибка: ' + e.message);
@@ -513,18 +690,42 @@ async function generate() {
   }
 }
 
-// ─── Copy ───────────────────────────────────────────────────────────────
+function renderBlocks(blocks) {
+  const names = {
+    block1: 'block1', block2: 'block2',
+    block4: 'block4', block5: 'block5',
+  };
 
-function copyMsg() {
-  const text = document.getElementById('resultMsg').textContent;
-  navigator.clipboard.writeText(text).then(() => {
-    const t = document.getElementById('toast');
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2000);
-  });
+  // Blocks 1, 2, 4, 5 — text content
+  for (const [key, elId] of Object.entries(names)) {
+    const el = document.getElementById(elId);
+    const card = document.getElementById(elId + 'Card');
+    el.textContent = blocks[key] || '';
+    card.style.display = blocks[key] ? '' : 'none';
+    card.classList.remove('open');
+  }
+
+  // Block 3 — message + comment
+  document.getElementById('block3msg').textContent = blocks.message || blocks.block3 || '';
+  document.getElementById('block3comment').textContent = blocks.message_comment || '';
+  document.getElementById('block3Card').classList.add('open');
 }
 
-// ─── History (from server DB) ──────────────────────────────────────────
+// ─── Copy ───────────────────────────────────────────────────────────────
+
+function copyMessage() {
+  const text = document.getElementById('block3msg').textContent;
+  navigator.clipboard.writeText(text).then(() => showToast('Текст скопирован'));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ─── History ────────────────────────────────────────────────────────────
 
 async function loadHistory() {
   try {
@@ -532,9 +733,7 @@ async function loadHistory() {
     const d = await r.json();
     history = d.communications || [];
     renderHistory();
-  } catch(e) {
-    console.error('History load error:', e);
-  }
+  } catch(e) {}
 }
 
 function renderHistory() {
@@ -543,12 +742,15 @@ function renderHistory() {
     el.innerHTML = '<div class="no-history">Пока пусто</div>';
     return;
   }
-  el.innerHTML = history.slice(0, 10).map(h => {
-    const dt = h.created_at ? new Date(h.created_at).toLocaleString('ru', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-    const icon = h.context_type === 'audio' ? '🎙' : '✉';
+  el.innerHTML = history.slice(0, 12).map(h => {
+    const dt = h.created_at
+      ? new Date(h.created_at).toLocaleString('ru', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+      : '';
+    const icon = h.context_type === 'audio' ? '&#x1f3a4;' : '&#x2709;';
+    const mode = h.mode === 'strategic' ? '<span class="history-mode">v2</span>' : '';
     return `
       <div class="history-item" onclick="loadHistoryItem(${h.id})">
-        <div class="history-date">${icon} ${dt} · ${h.profile_name || h.profile_id}</div>
+        <div class="history-date">${icon} ${dt} ${mode} · ${h.profile_name || h.profile_id}</div>
         <div class="history-preview">${h.task || h.preview || ''}</div>
       </div>
     `;
@@ -559,15 +761,23 @@ async function loadHistoryItem(id) {
   try {
     const r = await fetch(API + `/api/communications/${id}`);
     const d = await r.json();
-    document.getElementById('resultMsg').textContent = d.generated_message || '';
-    const notes = document.getElementById('resultNotes');
-    if (d.notes) { notes.textContent = d.notes; notes.classList.add('show'); }
-    else { notes.classList.remove('show'); }
-    document.getElementById('resultCard').classList.add('show');
-    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
-  } catch(e) {
-    console.error('Load history item error:', e);
-  }
+
+    if (d.blocks) {
+      renderBlocks(d.blocks);
+    } else {
+      // V1 item
+      document.getElementById('block3msg').textContent = d.generated_message || '';
+      document.getElementById('block3comment').textContent = '';
+      ['block1','block2','block4','block5'].forEach(b => {
+        document.getElementById(b).textContent = '';
+        document.getElementById(b + 'Card').style.display = 'none';
+      });
+    }
+
+    document.getElementById('tpInfo').style.display = 'none';
+    document.getElementById('results').classList.add('show');
+    document.getElementById('block3Card').scrollIntoView({ behavior: 'smooth' });
+  } catch(e) {}
 }
 
 // ─── Start ──────────────────────────────────────────────────────────────

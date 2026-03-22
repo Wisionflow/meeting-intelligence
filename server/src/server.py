@@ -38,8 +38,11 @@ from src.storage import (
     list_meetings, count_meetings, save_processing_status, update_meeting_status,
 )
 from src.report import generate_html_report
-from src.communicator import adapt_message
-from src.profiles import list_profiles, get_guide, setup_tables as setup_profile_tables
+from src.communicator import adapt_message, strategic_analysis
+from src.profiles import (
+    list_profiles, get_guide, get_full_profile,
+    setup_tables as setup_profile_tables,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -57,8 +60,17 @@ app = FastAPI(
 @app.on_event("startup")
 async def startup():
     os.makedirs(config.UPLOAD_DIR, exist_ok=True)
-    await get_pool()
+    pool = await get_pool()
     await setup_profile_tables()
+    # V2 migration: add analysis_json column
+    await pool.execute("""
+        ALTER TABLE mi_communications
+        ADD COLUMN IF NOT EXISTS analysis_json TEXT DEFAULT ''
+    """)
+    await pool.execute("""
+        ALTER TABLE mi_communications
+        ADD COLUMN IF NOT EXISTS mode TEXT DEFAULT 'simple'
+    """)
     log.info("VisionFlow server started on :%d", config.PORT)
 
 
@@ -256,6 +268,33 @@ class CommunicateRequest(BaseModel):
     user_id: str = ""
     context_type: str = "text"  # text | audio
     audio_filename: str = ""
+    mode: str = "strategic"  # "simple" (v1) or "strategic" (v2, 5 blocks)
+    sender_id: str = ""  # optional: sender profile for strategic mode
+
+
+async def _detect_third_parties(
+    context: str, recipient_id: str, sender_id: str = "",
+) -> list[dict]:
+    """Detect mentioned people in context and load their profiles."""
+    pool = await get_pool()
+    rows = await pool.fetch(
+        "SELECT id, display_name, guide, profile_data FROM mi_profiles"
+    )
+    third_parties = []
+    for r in rows:
+        pid = r["id"]
+        if pid == recipient_id or pid == sender_id:
+            continue
+        name = r["display_name"] or ""
+        # Check if any part of the name appears in context
+        name_parts = name.split()
+        if any(part for part in name_parts if len(part) > 3 and part in context):
+            third_parties.append({
+                "name": name,
+                "profile": r["profile_data"] or "",
+                "guide": r["guide"] or "",
+            })
+    return third_parties[:3]  # max 3 third parties
 
 
 @app.post("/api/communicate")
@@ -268,44 +307,110 @@ async def api_communicate(req: CommunicateRequest):
     if not guide_text:
         raise HTTPException(400, f"No communication guide for '{req.profile_id}'")
 
-    result = await adapt_message(
-        guide=guide_text,
-        context=req.context,
-        task=req.task,
-        goal=req.goal,
-        msg_type=req.msg_type,
-        include_notes=req.include_notes,
-    )
+    if req.mode == "strategic":
+        # V2: full 5-block strategic analysis
+        full_profile = await get_full_profile(req.profile_id)
+        recipient_profile = full_profile.get("profile_data", "") if full_profile else ""
 
-    # Save to DB
-    pool = await get_pool()
-    row = await pool.fetchrow(
-        """
-        INSERT INTO mi_communications
-            (user_id, profile_id, profile_name, context, context_type,
-             audio_filename, task, goal, msg_type,
-             generated_message, notes, tokens_input, tokens_output)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-        RETURNING id
-        """,
-        req.user_id,
-        req.profile_id,
-        guide_data.get("display_name", ""),
-        req.context[:10000],
-        req.context_type,
-        req.audio_filename or None,
-        req.task,
-        req.goal,
-        req.msg_type,
-        result.get("message", ""),
-        result.get("notes"),
-        result.get("tokens", {}).get("input", 0),
-        result.get("tokens", {}).get("output", 0),
-    )
-    result["id"] = row["id"]
-    log.info("Communication #%d saved: %s → %s", row["id"], req.user_id or "anon", req.profile_id)
+        # Load sender profile if provided
+        sender_profile = None
+        if req.sender_id:
+            sp = await get_full_profile(req.sender_id)
+            if sp:
+                sender_profile = sp.get("profile_data", "")
 
-    return result
+        # Detect third parties mentioned in context
+        third_parties = await _detect_third_parties(
+            req.context, req.profile_id, req.sender_id,
+        )
+
+        result = await strategic_analysis(
+            recipient_guide=guide_text,
+            recipient_profile=recipient_profile,
+            context=req.context,
+            task=req.task,
+            goal=req.goal,
+            msg_type=req.msg_type,
+            sender_profile=sender_profile,
+            third_parties=third_parties if third_parties else None,
+        )
+
+        # Save to DB
+        pool = await get_pool()
+        row = await pool.fetchrow(
+            """
+            INSERT INTO mi_communications
+                (user_id, profile_id, profile_name, context, context_type,
+                 audio_filename, task, goal, msg_type,
+                 generated_message, notes, tokens_input, tokens_output,
+                 analysis_json, mode)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            RETURNING id
+            """,
+            req.user_id,
+            req.profile_id,
+            guide_data.get("display_name", ""),
+            req.context[:10000],
+            req.context_type,
+            req.audio_filename or None,
+            req.task,
+            req.goal,
+            req.msg_type,
+            result.get("message", ""),
+            None,
+            result.get("tokens", {}).get("input", 0),
+            result.get("tokens", {}).get("output", 0),
+            json.dumps(result.get("blocks", {}), ensure_ascii=False),
+            "strategic",
+        )
+        result["id"] = row["id"]
+        log.info(
+            "Strategic comm #%d: %s → %s, third_parties=%s",
+            row["id"], req.user_id or "anon", req.profile_id,
+            result.get("third_parties_used", []),
+        )
+        return result
+
+    else:
+        # V1: simple adaptation
+        result = await adapt_message(
+            guide=guide_text,
+            context=req.context,
+            task=req.task,
+            goal=req.goal,
+            msg_type=req.msg_type,
+            include_notes=req.include_notes,
+        )
+
+        pool = await get_pool()
+        row = await pool.fetchrow(
+            """
+            INSERT INTO mi_communications
+                (user_id, profile_id, profile_name, context, context_type,
+                 audio_filename, task, goal, msg_type,
+                 generated_message, notes, tokens_input, tokens_output,
+                 mode)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            RETURNING id
+            """,
+            req.user_id,
+            req.profile_id,
+            guide_data.get("display_name", ""),
+            req.context[:10000],
+            req.context_type,
+            req.audio_filename or None,
+            req.task,
+            req.goal,
+            req.msg_type,
+            result.get("message", ""),
+            result.get("notes"),
+            result.get("tokens", {}).get("input", 0),
+            result.get("tokens", {}).get("output", 0),
+            "simple",
+        )
+        result["id"] = row["id"]
+        log.info("Simple comm #%d: %s → %s", row["id"], req.user_id or "anon", req.profile_id)
+        return result
 
 
 # ─── Communication history ──────────────────────────────────────────────
@@ -318,7 +423,7 @@ async def api_list_communications(user_id: str = "", limit: int = 30, offset: in
             """
             SELECT id, profile_id, profile_name, task, goal,
                    LEFT(generated_message, 100) as preview,
-                   context_type, created_at
+                   context_type, mode, created_at
             FROM mi_communications
             WHERE user_id = $1
             ORDER BY created_at DESC
@@ -331,7 +436,7 @@ async def api_list_communications(user_id: str = "", limit: int = 30, offset: in
             """
             SELECT id, user_id, profile_id, profile_name, task, goal,
                    LEFT(generated_message, 100) as preview,
-                   context_type, created_at
+                   context_type, mode, created_at
             FROM mi_communications
             ORDER BY created_at DESC
             LIMIT $1 OFFSET $2
@@ -357,6 +462,12 @@ async def api_get_communication(comm_id: int):
     d = dict(row)
     if d.get("created_at"):
         d["created_at"] = d["created_at"].isoformat()
+    # Parse analysis_json back to dict for strategic mode
+    if d.get("analysis_json"):
+        try:
+            d["blocks"] = json.loads(d["analysis_json"])
+        except (json.JSONDecodeError, TypeError):
+            d["blocks"] = {}
     return d
 
 
@@ -386,6 +497,58 @@ async def api_transcribe_for_context(file: UploadFile = File(...)):
         raise HTTPException(500, f"Transcription error: {e}")
     finally:
         upload_path.unlink(missing_ok=True)
+
+
+# ─── Upload file for context (images, documents) ─────────────────────────────
+
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
+DOC_EXTENSIONS = {".txt", ".md", ".csv", ".json", ".xml", ".html"}
+
+
+@app.post("/api/communicate/upload-file")
+async def api_upload_context_file(file: UploadFile = File(...)):
+    """Upload image or document to use as communication context.
+
+    Images: saved and returned as base64 data URL for Claude vision.
+    Documents: text extracted and returned.
+    """
+    import base64
+
+    ext = Path(file.filename).suffix.lower()
+    content = await file.read()
+
+    if ext in IMAGE_EXTENSIONS:
+        # Return base64 for frontend to include in context
+        b64 = base64.b64encode(content).decode()
+        mime = {
+            ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+            ".gif": "image/gif", ".webp": "image/webp", ".bmp": "image/bmp",
+        }.get(ext, "image/png")
+        return {
+            "type": "image",
+            "filename": file.filename,
+            "data_url": f"data:{mime};base64,{b64}",
+            "size": len(content),
+        }
+
+    elif ext in DOC_EXTENSIONS:
+        try:
+            text = content.decode("utf-8")
+        except UnicodeDecodeError:
+            text = content.decode("cp1251", errors="replace")
+        return {
+            "type": "document",
+            "filename": file.filename,
+            "text": text[:20000],
+            "size": len(content),
+        }
+
+    else:
+        raise HTTPException(
+            400,
+            f"Unsupported format: {ext}. "
+            f"Supported: {', '.join(sorted(IMAGE_EXTENSIONS | DOC_EXTENSIONS | config.AUDIO_EXTENSIONS))}",
+        )
 
 
 # ─── Entry point ────────────────────────────────────────────────────────────
