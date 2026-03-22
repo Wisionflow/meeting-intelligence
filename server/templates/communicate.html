@@ -593,6 +593,15 @@ async function onFile(input) {
 
     // Audio file → ask: call or meeting?
     if (audioExts.includes(ext)) {
+      // Auto-detect phone calls: -NNNN-NNNN-Internal pattern
+      const isPhoneCall = /[-_]\d{4}[-_]\d{4}[-_]Internal/i.test(file.name);
+      if (isPhoneCall) {
+        await processCallAudio(file);
+        continue;
+      }
+
+      // Re-check pipeline health right now (may have started after page load)
+      await checkPipelineHealth();
       if (pipelineAvailable) {
         const choice = confirm(
           'Это запись встречи с несколькими спикерами?\n\n' +
