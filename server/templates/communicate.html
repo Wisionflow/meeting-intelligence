@@ -294,6 +294,81 @@
   }
   .stream-icon { font-size: 15px; }
 
+  /* ─── Meeting audio: speaker mini-dashboard ─── */
+  .speaker-panel {
+    display: none; max-width: 760px; margin: 0 auto;
+    padding: 12px 20px;
+  }
+  .speaker-panel.show { display: block; }
+  .sp-header {
+    font-size: 12px; font-weight: 600; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;
+  }
+  .sp-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 14px; margin-bottom: 8px;
+  }
+  .sp-card-head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+  }
+  .sp-label {
+    font-size: 12px; font-weight: 700; color: var(--accent);
+    background: var(--accent-light); padding: 2px 8px; border-radius: 8px;
+  }
+  .sp-badge {
+    font-size: 10px; padding: 2px 8px; border-radius: 8px; cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .sp-badge:hover { opacity: 0.8; }
+  .sp-badge.suggest { background: var(--success-bg); color: var(--success); border: 1px solid var(--success); }
+  .sp-badge.maybe { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn); }
+  .sp-samples {
+    font-size: 12px; color: #666; line-height: 1.5; margin-bottom: 6px;
+  }
+  .sp-sample { padding: 2px 0; border-bottom: 1px solid #f5f5f5; }
+  .sp-sample:last-child { border-bottom: none; }
+  .sp-sample-time { color: #aaa; font-size: 11px; }
+  .sp-input {
+    width: 100%; padding: 6px 10px; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 13px; font-family: inherit;
+  }
+  .sp-input:focus { outline: none; border-color: var(--accent); }
+  .btn-confirm-names {
+    width: 100%; padding: 10px; background: var(--success); color: #fff;
+    border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; margin-top: 6px; transition: background 0.15s;
+  }
+  .btn-confirm-names:hover { background: #15803d; }
+  .btn-confirm-names:disabled { background: #a0c4a0; cursor: not-allowed; }
+
+  .pipeline-banner {
+    display: none; max-width: 760px; margin: 0 auto;
+    padding: 10px 20px;
+  }
+  .pipeline-banner.show { display: block; }
+  .pb-inner {
+    background: #f5f5f5; border: 1px solid #ddd; border-radius: 10px;
+    padding: 12px 16px; font-size: 12px; color: #888;
+    text-align: center;
+  }
+  .pb-inner code {
+    background: #eee; padding: 2px 6px; border-radius: 4px;
+    font-size: 11px;
+  }
+
+  /* Audio mode toggle */
+  .audio-mode-toggle {
+    display: flex; gap: 0; margin-bottom: 8px;
+  }
+  .amt-btn {
+    flex: 1; padding: 6px 0; text-align: center;
+    border: 1px solid var(--border); background: #fafafa;
+    cursor: pointer; font-size: 12px; transition: all 0.15s;
+  }
+  .amt-btn:first-child { border-radius: 6px 0 0 6px; }
+  .amt-btn:last-child { border-radius: 0 6px 6px 0; }
+  .amt-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
   /* Empty state */
   .empty-state {
     display: flex; flex-direction: column; align-items: center;
@@ -364,6 +439,22 @@
       </div>
     </div>
 
+    <!-- Pipeline unavailable banner -->
+    <div class="pipeline-banner" id="pipelineBanner">
+      <div class="pb-inner">
+        Для обработки встреч запустите: <code>python -X utf8 run.py --dashboard</code>
+      </div>
+    </div>
+
+    <!-- Speaker identification mini-dashboard -->
+    <div class="speaker-panel" id="speakerPanel">
+      <div class="sp-header">Назначьте спикеров</div>
+      <div id="speakerCards"></div>
+      <button class="btn-confirm-names" id="btnConfirmNames" onclick="confirmSpeakerNames()">
+        Подтвердить имена
+      </button>
+    </div>
+
     <!-- Input -->
     <div class="input-bar">
       <div class="input-wrap">
@@ -398,12 +489,26 @@ let attachedFiles = []; // {type, filename, text?}
 let sending = false;
 let streamTimer = null;
 let currentRecipient = null; // {id, name, disc, trait}
+let pipelineAvailable = false;
+let currentSidecarPath = ''; // for apply-names
+const PIPELINE_URL = 'http://127.0.0.1:8765';
 
 // ─── Init ───────────────────────────────────────────────────────────────
 
 async function init() {
   loadSessions();
+  checkPipelineHealth();
   document.getElementById('chatInput').focus();
+}
+
+async function checkPipelineHealth() {
+  try {
+    const r = await fetch(PIPELINE_URL + '/api/pipeline-health', { signal: AbortSignal.timeout(2000) });
+    const d = await r.json();
+    pipelineAvailable = d.ok === true;
+  } catch(e) {
+    pipelineAvailable = false;
+  }
 }
 
 // ─── Sessions ───────────────────────────────────────────────────────────
@@ -481,7 +586,33 @@ function autoGrow(el) {
 // ─── File attachment ────────────────────────────────────────────────────
 
 async function onFile(input) {
+  const audioExts = ['.m4a','.mp3','.wav','.ogg','.flac','.aac','.wma','.webm'];
+
   for (const file of input.files) {
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+
+    // Audio file → ask: call or meeting?
+    if (audioExts.includes(ext)) {
+      if (pipelineAvailable) {
+        const choice = confirm(
+          'Это запись встречи с несколькими спикерами?\n\n' +
+          'OK = Встреча (диаризация через tss-ops)\n' +
+          'Отмена = Звонок (быстрая транскрипция)'
+        );
+        if (choice) {
+          await processMeetingAudio(file);
+        } else {
+          await processCallAudio(file);
+        }
+      } else {
+        // Pipeline unavailable — show banner, use Groq
+        document.getElementById('pipelineBanner').classList.add('show');
+        await processCallAudio(file);
+      }
+      continue;
+    }
+
+    // Non-audio file → existing upload logic
     const fd = new FormData();
     fd.append('file', file);
     try {
@@ -498,6 +629,182 @@ async function onFile(input) {
   }
   renderFileChips();
   input.value = '';
+}
+
+// ─── Call audio (Groq, no diarization) ──────────────────────────────────
+
+async function processCallAudio(file) {
+  toast('Транскрибирую звонок...');
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch(API + '/api/communicate/transcribe', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (d.transcript) {
+      attachedFiles.push({ type: 'document', filename: file.name, text: d.transcript });
+      renderFileChips();
+      toast('Звонок расшифрован (' + Math.round(d.duration || 0) + ' сек)');
+    } else {
+      toast('Ошибка: ' + (d.detail || 'не удалось транскрибировать'));
+    }
+  } catch(e) {
+    toast('Ошибка: ' + e.message);
+  }
+}
+
+// ─── Meeting audio (tss-ops pipeline with diarization) ──────────────────
+
+async function processMeetingAudio(file) {
+  document.getElementById('emptyState').style.display = 'none';
+
+  // Show processing message in chat
+  addUserMsg('Загружаю запись встречи: ' + file.name, [file.name]);
+  startStreamingIndicator();
+
+  const fd = new FormData();
+  fd.append('file', file);
+
+  try {
+    const r = await fetch(PIPELINE_URL + '/api/process-audio', { method: 'POST', body: fd });
+    const d = await r.json();
+
+    stopStreamingIndicator();
+
+    if (d.error) {
+      addAiError(d.error);
+      return;
+    }
+
+    currentSidecarPath = d.sidecar_path;
+
+    // Show speaker identification panel
+    showSpeakerPanel(d);
+
+    toast(d.speakers.length + ' спикеров, ' + d.total_segments + ' сегментов');
+
+  } catch(e) {
+    stopStreamingIndicator();
+    if (e.name === 'TypeError' && e.message.includes('fetch')) {
+      document.getElementById('pipelineBanner').classList.add('show');
+      addAiError('tss-ops пайплайн недоступен. Запустите: python -X utf8 run.py --dashboard');
+    } else {
+      addAiError('Ошибка обработки: ' + e.message);
+    }
+  }
+}
+
+function showSpeakerPanel(data) {
+  const panel = document.getElementById('speakerPanel');
+  const cards = document.getElementById('speakerCards');
+
+  let html = '';
+  for (const sp of data.speakers) {
+    const preview = data.segments_preview[sp] || [];
+    const suggs = data.suggestions[sp] || [];
+
+    html += `<div class="sp-card">
+      <div class="sp-card-head">
+        <span class="sp-label">${sp}</span>`;
+
+    // Suggestion badges
+    for (const s of suggs) {
+      const cls = s.confidence === 'suggest' ? 'suggest' : 'maybe';
+      const pct = Math.round(s.score * 100);
+      html += ` <span class="sp-badge ${cls}" onclick="document.getElementById('name_${sp}').value='${escHtml(s.canonical_name)}'">${escHtml(s.canonical_name)} ${pct}%</span>`;
+    }
+
+    html += `</div>`;
+
+    // Sample utterances
+    if (preview.length) {
+      html += '<div class="sp-samples">';
+      for (const s of preview) {
+        const m = Math.floor(s.start / 60);
+        const sec = Math.floor(s.start % 60);
+        html += `<div class="sp-sample"><span class="sp-sample-time">[${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}]</span> ${escHtml(s.text)}</div>`;
+      }
+      html += '</div>';
+    }
+
+    // Name input
+    const prefill = suggs.length && suggs[0].confidence === 'suggest' ? suggs[0].canonical_name : '';
+    html += `<input class="sp-input" id="name_${sp}" data-speaker="${sp}" placeholder="Имя спикера" value="${escHtml(prefill)}">`;
+
+    html += '</div>';
+  }
+
+  cards.innerHTML = html;
+  panel.classList.add('show');
+  scrollToBottom();
+}
+
+async function confirmSpeakerNames() {
+  const inputs = document.querySelectorAll('.sp-input');
+  const names = {};
+  let allFilled = true;
+
+  inputs.forEach(inp => {
+    const name = inp.value.trim();
+    const sp = inp.dataset.speaker;
+    if (name) {
+      names[sp] = name;
+    } else {
+      allFilled = false;
+    }
+  });
+
+  if (!Object.keys(names).length) {
+    toast('Заполните хотя бы одного спикера');
+    return;
+  }
+
+  const btn = document.getElementById('btnConfirmNames');
+  btn.disabled = true;
+  btn.textContent = 'Обрабатываю...';
+
+  try {
+    const r = await fetch(PIPELINE_URL + '/api/apply-names', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sidecar_path: currentSidecarPath,
+        names: names,
+      }),
+    });
+    const d = await r.json();
+
+    if (d.error) {
+      toast('Ошибка: ' + d.error);
+      return;
+    }
+
+    // Hide speaker panel
+    document.getElementById('speakerPanel').classList.remove('show');
+
+    // Insert transcript into chat as context
+    const transcript = d.transcript;
+    attachedFiles.push({
+      type: 'document',
+      filename: 'meeting-transcript.md',
+      text: transcript,
+    });
+    renderFileChips();
+
+    // Show confirmation in chat
+    const div = document.createElement('div');
+    div.className = 'msg msg-ai';
+    div.innerHTML = `<div class="msg-bubble"><div class="ai-text" style="color:var(--success);">&#x2713; Транскрипт с ${d.speakers_count} спикерами готов и добавлен в контекст. Напишите задачу и нажмите Enter.</div></div>`;
+    insertBeforeTyping(div);
+    scrollToBottom();
+
+    toast('Транскрипт готов — ' + d.speakers_count + ' спикеров');
+
+  } catch(e) {
+    toast('Ошибка: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Подтвердить имена';
+  }
 }
 
 function renderFileChips() {
