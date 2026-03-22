@@ -10,10 +10,7 @@ load_dotenv()
 
 # ─── Database ────────────────────────────────────────────────────────────────
 
-POSTGRES_DSN = os.getenv(
-    "POSTGRES_DSN",
-    "postgresql://growth_user:GrowthCMO2026!Algora@10.0.0.2:5432/algora_growth",
-)
+POSTGRES_DSN = os.getenv("POSTGRES_DSN", "")
 
 # ─── Groq (Whisper transcription) ────────────────────────────────────────────
 
