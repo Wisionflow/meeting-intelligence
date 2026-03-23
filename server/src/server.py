@@ -63,18 +63,27 @@ async def startup():
     os.makedirs(config.UPLOAD_DIR, exist_ok=True)
     pool = await get_pool()
     await setup_profile_tables()
-    # V2 migration: add analysis_json column
+    # Create communications table if missing
     await pool.execute("""
-        ALTER TABLE mi_communications
-        ADD COLUMN IF NOT EXISTS analysis_json TEXT DEFAULT ''
-    """)
-    await pool.execute("""
-        ALTER TABLE mi_communications
-        ADD COLUMN IF NOT EXISTS mode TEXT DEFAULT 'simple'
-    """)
-    await pool.execute("""
-        ALTER TABLE mi_communications
-        ADD COLUMN IF NOT EXISTS session_id TEXT DEFAULT ''
+        CREATE TABLE IF NOT EXISTS mi_communications (
+            id              SERIAL PRIMARY KEY,
+            user_id         TEXT NOT NULL DEFAULT '',
+            profile_id      TEXT DEFAULT '',
+            profile_name    TEXT DEFAULT '',
+            context         TEXT DEFAULT '',
+            context_type    TEXT DEFAULT '',
+            task            TEXT DEFAULT '',
+            goal            TEXT DEFAULT '',
+            msg_type        TEXT DEFAULT '',
+            generated_message TEXT DEFAULT '',
+            notes           TEXT DEFAULT '',
+            tokens_input    INT DEFAULT 0,
+            tokens_output   INT DEFAULT 0,
+            analysis_json   TEXT DEFAULT '',
+            mode            TEXT DEFAULT 'simple',
+            session_id      TEXT DEFAULT '',
+            created_at      TIMESTAMPTZ DEFAULT NOW()
+        )
     """)
     log.info("VisionFlow server started on :%d", config.PORT)
 
