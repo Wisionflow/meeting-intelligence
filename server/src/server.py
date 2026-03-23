@@ -617,7 +617,11 @@ class ChatRequest(BaseModel):
 
 
 async def _detect_profiles_in_text(text: str) -> list[dict]:
-    """Find all known people mentioned in text and load their full profiles."""
+    """Find all known people mentioned in text and load their full profiles.
+
+    Uses stem matching (first N chars of surname) to handle Russian declensions:
+    Хренова/Хреновой/Хренову, Попов/Попова/Попову etc.
+    """
     pool = await get_pool()
     rows = await pool.fetch(
         "SELECT id, display_name, guide, profile_data FROM mi_profiles"
@@ -626,16 +630,25 @@ async def _detect_profiles_in_text(text: str) -> list[dict]:
     text_lower = text.lower()
     for r in rows:
         name = r["display_name"] or ""
-        # Match if any surname (word > 3 chars) appears in text
         parts = name.split()
         for part in parts:
-            if len(part) > 3 and part.lower() in text_lower:
+            if len(part) < 4:
+                continue
+            part_lower = part.lower()
+            # Stem: for short names (4-5 chars) use full word,
+            # for longer names trim last 2 chars (min 4) to handle declensions
+            if len(part_lower) <= 5:
+                stem = part_lower
+            else:
+                stem = part_lower[:max(4, len(part_lower) - 2)]
+            if stem in text_lower:
                 detected.append({
                     "id": r["id"],
                     "name": name,
                     "profile": r["profile_data"] or "",
                     "guide": r["guide"] or "",
                 })
+                log.info("Profile detected: '%s' (stem='%s') in text", name, stem)
                 break
     return detected[:5]  # max 5 profiles
 
