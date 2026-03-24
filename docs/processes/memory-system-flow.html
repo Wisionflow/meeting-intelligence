@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>DRAKON: memory-system-flow</title>
+<style>
+  body { margin:0; background:#e0eef2; font-family:Arial,sans-serif; }
+  #toolbar { padding:8px 16px; background:#2d6a8a; color:#fff;
+              display:flex; align-items:center; gap:12px; }
+  #toolbar h1 { margin:0; font-size:15px; font-weight:600; }
+  .btn { background:#1a4f6e; border:none; color:#fff; padding:4px 12px;
+          border-radius:4px; cursor:pointer; font-size:13px; }
+  .btn:hover { background:#0d3350; }
+  #canvas { overflow:auto; padding:24px; }
+  #svg-wrap { display:inline-block; transform-origin:top left; }
+</style>
+</head>
+<body>
+<div id="toolbar">
+  <h1>DRAKON: memory-system-flow</h1>
+  <button class="btn" onclick="zoom(1.2)">+</button>
+  <button class="btn" onclick="zoom(0.8)">−</button>
+  <button class="btn" onclick="resetZoom()">100%</button>
+  <span id="zoom-label" style="font-size:12px;">100%</span>
+</div>
+<div id="canvas">
+  <div id="svg-wrap"><svg xmlns="http://www.w3.org/2000/svg" width="920" height="4702">
+<rect width="920" height="4702" fill="#b3d9de"/>
+<text x="460" y="32" text-anchor="middle" font-size="16" font-weight="bold" font-family="Arial,sans-serif" fill="#1a1a1a">memory-system-flow</text>
+<line x1="380.0" y1="104.0" x2="380.0" y2="140.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,140.0 372.0,127.2 388.0,127.2" fill="#000000"/>
+<line x1="380.0" y1="200.0" x2="380.0" y2="236.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,236.0 372.0,223.2 388.0,223.2" fill="#000000"/>
+<line x1="380.0" y1="296.0" x2="380.0" y2="332.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,332.0 372.0,319.2 388.0,319.2" fill="#000000"/>
+<line x1="380.0" y1="392.0" x2="380.0" y2="428.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,428.0 372.0,415.2 388.0,415.2" fill="#000000"/>
+<line x1="380.0" y1="488.0" x2="380.0" y2="524.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,524.0 372.0,511.2 388.0,511.2" fill="#000000"/>
+<line x1="380.0" y1="584.0" x2="380.0" y2="620.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,620.0 372.0,607.2 388.0,607.2" fill="#000000"/>
+<line x1="380.0" y1="680.0" x2="380.0" y2="716.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,716.0 372.0,703.2 388.0,703.2" fill="#000000"/>
+<line x1="380.0" y1="776.0" x2="380.0" y2="812.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,812.0 372.0,799.2 388.0,799.2" fill="#000000"/>
+<line x1="380.0" y1="872.0" x2="380.0" y2="908.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,908.0 372.0,895.2 388.0,895.2" fill="#000000"/>
+<line x1="380.0" y1="968.0" x2="380.0" y2="1004.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,1004.0 372.0,991.2 388.0,991.2" fill="#000000"/>
+<line x1="380.0" y1="1064.0" x2="380.0" y2="1100.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,1100.0 372.0,1087.2 388.0,1087.2" fill="#000000"/>
+<line x1="380.0" y1="1144.0" x2="380.0" y2="1180.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,1180.0 372.0,1167.2 388.0,1167.2" fill="#000000"/>
+<line x1="380.0" y1="1240.0" x2="380.0" y2="1276.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,1276.0 372.0,1263.2 388.0,1263.2" fill="#000000"/>
+<line x1="380.0" y1="1336.0" x2="380.0" y2="1372.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,1372.0 372.0,1359.2 388.0,1359.2" fill="#000000"/>
+<line x1="380.0" y1="1432.0" x2="380.0" y2="1468.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,1468.0 372.0,1455.2 388.0,1455.2" fill="#000000"/>
+<line x1="380.0" y1="1548.0" x2="380.0" y2="1584.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,1584.0 372.0,1571.2 388.0,1571.2" fill="#000000"/>
+<line x1="490.0" y1="1508.0" x2="380.0" y2="1508.0" stroke="#000000" stroke-width="1.5"/>
+<line x1="380.0" y1="1508.0" x2="380.0" y2="1776.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,1776.0 372.0,1763.2 388.0,1763.2" fill="#000000"/>
+<line x1="380.0" y1="1644.0" x2="380.0" y2="1680.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,1680.0 372.0,1667.2 388.0,1667.2" fill="#000000"/>
+<line x1="380.0" y1="1740.0" x2="380.0" y2="1776.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,1776.0 372.0,1763.2 388.0,1763.2" fill="#000000"/>
+<line x1="380.0" y1="1856.0" x2="380.0" y2="1892.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,1892.0 372.0,1879.2 388.0,1879.2" fill="#000000"/>
+<line x1="490.0" y1="1816.0" x2="380.0" y2="1816.0" stroke="#000000" stroke-width="1.5"/>
+<line x1="380.0" y1="1816.0" x2="380.0" y2="1988.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,1988.0 372.0,1975.2 388.0,1975.2" fill="#000000"/>
+<line x1="380.0" y1="1952.0" x2="380.0" y2="1988.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,1988.0 372.0,1975.2 388.0,1975.2" fill="#000000"/>
+<line x1="380.0" y1="2048.0" x2="380.0" y2="2084.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,2084.0 372.0,2071.2 388.0,2071.2" fill="#000000"/>
+<line x1="380.0" y1="2128.0" x2="380.0" y2="2164.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,2164.0 372.0,2151.2 388.0,2151.2" fill="#000000"/>
+<line x1="380.0" y1="2224.0" x2="380.0" y2="2260.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,2260.0 372.0,2247.2 388.0,2247.2" fill="#000000"/>
+<line x1="380.0" y1="2320.0" x2="380.0" y2="2356.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,2356.0 372.0,2343.2 388.0,2343.2" fill="#000000"/>
+<line x1="380.0" y1="2416.0" x2="380.0" y2="2452.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,2452.0 372.0,2439.2 388.0,2439.2" fill="#000000"/>
+<line x1="380.0" y1="2512.0" x2="380.0" y2="2548.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,2548.0 372.0,2535.2 388.0,2535.2" fill="#000000"/>
+<line x1="380.0" y1="2608.0" x2="380.0" y2="2644.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,2644.0 372.0,2631.2 388.0,2631.2" fill="#000000"/>
+<line x1="380.0" y1="2704.0" x2="380.0" y2="2740.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,2740.0 372.0,2727.2 388.0,2727.2" fill="#000000"/>
+<line x1="380.0" y1="2800.0" x2="380.0" y2="2836.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,2836.0 372.0,2823.2 388.0,2823.2" fill="#000000"/>
+<line x1="380.0" y1="2880.0" x2="380.0" y2="2916.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,2916.0 372.0,2903.2 388.0,2903.2" fill="#000000"/>
+<line x1="380.0" y1="2976.0" x2="380.0" y2="3012.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,3012.0 372.0,2999.2 388.0,2999.2" fill="#000000"/>
+<line x1="380.0" y1="3072.0" x2="380.0" y2="3108.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,3108.0 372.0,3095.2 388.0,3095.2" fill="#000000"/>
+<line x1="380.0" y1="3168.0" x2="380.0" y2="3204.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,3204.0 372.0,3191.2 388.0,3191.2" fill="#000000"/>
+<line x1="380.0" y1="3264.0" x2="380.0" y2="3300.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,3300.0 372.0,3287.2 388.0,3287.2" fill="#000000"/>
+<line x1="380.0" y1="3380.0" x2="380.0" y2="3416.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,3416.0 372.0,3403.2 388.0,3403.2" fill="#000000"/>
+<line x1="490.0" y1="3340.0" x2="380.0" y2="3340.0" stroke="#000000" stroke-width="1.5"/>
+<line x1="380.0" y1="3340.0" x2="380.0" y2="3608.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,3608.0 372.0,3595.2 388.0,3595.2" fill="#000000"/>
+<line x1="380.0" y1="3476.0" x2="380.0" y2="3512.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,3512.0 372.0,3499.2 388.0,3499.2" fill="#000000"/>
+<line x1="380.0" y1="3572.0" x2="380.0" y2="3608.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,3608.0 372.0,3595.2 388.0,3595.2" fill="#000000"/>
+<line x1="380.0" y1="3668.0" x2="380.0" y2="3704.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,3704.0 372.0,3691.2 388.0,3691.2" fill="#000000"/>
+<line x1="380.0" y1="3764.0" x2="380.0" y2="3800.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,3800.0 372.0,3787.2 388.0,3787.2" fill="#000000"/>
+<line x1="380.0" y1="3844.0" x2="380.0" y2="3880.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,3880.0 372.0,3867.2 388.0,3867.2" fill="#000000"/>
+<line x1="380.0" y1="3940.0" x2="380.0" y2="3976.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,3976.0 372.0,3963.2 388.0,3963.2" fill="#000000"/>
+<line x1="380.0" y1="4036.0" x2="380.0" y2="4072.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,4072.0 372.0,4059.2 388.0,4059.2" fill="#000000"/>
+<line x1="380.0" y1="4132.0" x2="380.0" y2="4168.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,4168.0 372.0,4155.2 388.0,4155.2" fill="#000000"/>
+<line x1="380.0" y1="4228.0" x2="380.0" y2="4264.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,4264.0 372.0,4251.2 388.0,4251.2" fill="#000000"/>
+<line x1="380.0" y1="4344.0" x2="380.0" y2="4380.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,4380.0 372.0,4367.2 388.0,4367.2" fill="#000000"/>
+<line x1="490.0" y1="4304.0" x2="380.0" y2="4304.0" stroke="#000000" stroke-width="1.5"/>
+<line x1="380.0" y1="4304.0" x2="380.0" y2="4476.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,4476.0 372.0,4463.2 388.0,4463.2" fill="#000000"/>
+<line x1="380.0" y1="4440.0" x2="380.0" y2="4476.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,4476.0 372.0,4463.2 388.0,4463.2" fill="#000000"/>
+<line x1="380.0" y1="4536.0" x2="380.0" y2="4572.0" stroke="#000000" stroke-width="1.5"/>
+<polygon points="380.0,4572.0 372.0,4559.2 388.0,4559.2" fill="#000000"/>
+<rect x="300.0" y="4572.0" width="160" height="50" rx="6" fill="#f0f0f0" stroke="#000000" stroke-width="2"/>
+<line x1="306.0" y1="4579.0" x2="454.0" y2="4579.0" stroke="#000000" stroke-width="1.5"/>
+<line x1="306.0" y1="4615.0" x2="454.0" y2="4615.0" stroke="#000000" stroke-width="1.5"/>
+
+<rect x="270.0" y="60.0" width="220" height="44" rx="8" fill="#5a9ab0" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="86.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="bold" fill="#ffffff">Входящие каналы</text>
+<polygon points="280.0,140.0 468.0,140.0 480.0,152.0 480.0,200.0 280.0,200.0" fill="#ffffc0" stroke="#000000" stroke-width="1" stroke-dasharray="5,3"/>
+<polyline points="468.0,140.0 468.0,152.0 480.0,152.0" fill="none" stroke="#000000" stroke-width="1"/>
+<text x="380.0" y="151.0" text-anchor="middle" font-size="11" font-family="Arial,sans-serif" font-weight="normal" fill="#444444">6 каналов: Аудио, Email,</text>
+<text x="380.0" y="166.0" text-anchor="middle" font-size="11" font-family="Arial,sans-serif" font-weight="normal" fill="#444444">B24 чаты, YouGile, Текст</text>
+<text x="380.0" y="181.0" text-anchor="middle" font-size="11" font-family="Arial,sans-serif" font-weight="normal" fill="#444444">(DROP-HERE), Сессия</text>
+<text x="380.0" y="196.0" text-anchor="middle" font-size="11" font-family="Arial,sans-serif" font-weight="normal" fill="#444444">Claude Code</text>
+<rect x="270.0" y="236.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="253.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Аудио: Whisper large-v3</text>
+<text x="380.0" y="270.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">(CUDA) → транскрибация +</text>
+<text x="380.0" y="287.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">pyannote (диаризация)</text>
+<rect x="270.0" y="332.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="349.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Voice Embeddings:</text>
+<text x="380.0" y="366.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">wespeaker 256-dim →</text>
+<text x="380.0" y="383.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">speaker identification</text>
+<rect x="270.0" y="428.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="445.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Claude анализ: summary,</text>
+<text x="380.0" y="462.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">решения, задачи, риски →</text>
+<text x="380.0" y="479.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">02-TRANSCRIPTS/*.md</text>
+<rect x="270.0" y="524.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="541.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Пользователь заполняет</text>
+<text x="380.0" y="558.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">имена спикеров →</text>
+<text x="380.0" y="575.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">apply_speaker_names()</text>
+<rect x="270.0" y="620.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="637.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Email: IMAP sync →</text>
+<text x="380.0" y="654.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">email-archive.db →</text>
+<text x="380.0" y="671.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">email-tracker.json</text>
+<rect x="270.0" y="716.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="725.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">B24 чаты: 6 CRM-чатов,</text>
+<text x="380.0" y="742.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">webhook API →</text>
+<text x="380.0" y="759.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">b24_crm_chats.json →</text>
+<text x="380.0" y="776.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">problem_matcher</text>
+<rect x="270.0" y="812.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="829.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">YouGile: Excel export →</text>
+<text x="380.0" y="846.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">парсинг →</text>
+<text x="380.0" y="863.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">task-intelligence.db</text>
+<rect x="270.0" y="908.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="917.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">DROP-HERE:</text>
+<text x="380.0" y="934.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">inbox_dispatcher.py →</text>
+<text x="380.0" y="951.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">классификация → обработчик</text>
+<text x="380.0" y="968.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">по типу</text>
+<rect x="270.0" y="1004.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="1013.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Все задачи → Task</text>
+<text x="380.0" y="1030.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Intelligence: 4 источника</text>
+<text x="380.0" y="1047.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">→ единая БД</text>
+<text x="380.0" y="1064.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">(task-intelligence.db)</text>
+<rect x="270.0" y="1100.0" width="220" height="44" rx="8" fill="#5a9ab0" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="1126.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="bold" fill="#ffffff">Извлечение знаний</text>
+<rect x="270.0" y="1180.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="1189.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">behavioral_extractor.py:</text>
+<text x="380.0" y="1206.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Claude API извлекает DISC</text>
+<text x="380.0" y="1223.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">(0-1), Big5 (0-1),</text>
+<text x="380.0" y="1240.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">лингвистику</text>
+<rect x="270.0" y="1276.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="1285.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">quantitative.py: время</text>
+<text x="380.0" y="1302.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">речи %, повороты,</text>
+<text x="380.0" y="1319.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">перебивания, вопросы vs</text>
+<text x="380.0" y="1336.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">утверждения</text>
+<rect x="270.0" y="1372.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="1389.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">storage.append_observation()</text>
+<text x="380.0" y="1406.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">→</text>
+<text x="380.0" y="1423.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">06-KB/people/{id}/raw-observations.json</text>
+<polygon points="380.0,1468.0 490.0,1508.0 380.0,1548.0 270.0,1508.0" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="1496.0" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Порог синтеза</text>
+<text x="380.0" y="1512.0" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">достигнут? (3, 5 или 8</text>
+<text x="380.0" y="1528.0" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">встреч)</text>
+<text x="386.0" y="1564.0" text-anchor="middle" font-size="11" fill="#444444" font-style="italic">Да</text>
+<text x="500.0" y="1512.0" text-anchor="start" font-size="11" fill="#444444" font-style="italic">Нет</text>
+<rect x="270.0" y="1584.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="1601.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">profile_synthesizer.py:</text>
+<text x="380.0" y="1618.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">полный профиль DISC + Big5</text>
+<text x="380.0" y="1635.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">+ стиль + триггеры</text>
+<rect x="270.0" y="1680.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="1697.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">→ psychotype-profile.md +</text>
+<text x="380.0" y="1714.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">communication-guide.md</text>
+<text x="380.0" y="1731.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">(confidence: 15% × встреч)</text>
+<polygon points="380.0,1776.0 490.0,1816.0 380.0,1856.0 270.0,1816.0" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="1812.0" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Каждые 5 новых</text>
+<text x="380.0" y="1828.0" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">наблюдений?</text>
+<text x="386.0" y="1872.0" text-anchor="middle" font-size="11" fill="#444444" font-style="italic">Да</text>
+<text x="500.0" y="1820.0" text-anchor="start" font-size="11" fill="#444444" font-style="italic">Нет</text>
+<rect x="270.0" y="1892.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="1909.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">culture_analyzer.py:</text>
+<text x="380.0" y="1926.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">CVF/OCAI профиль компании</text>
+<text x="380.0" y="1943.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">→ culture-profile.md</text>
+<rect x="270.0" y="1988.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="2005.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Email профилирование:</text>
+<text x="380.0" y="2022.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">стиль, тон, формулировки →</text>
+<text x="380.0" y="2039.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">raw-observations.json</text>
+<rect x="270.0" y="2084.0" width="220" height="44" rx="8" fill="#5a9ab0" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="2110.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="bold" fill="#ffffff">Task Intelligence</text>
+<rect x="270.0" y="2164.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="2181.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">4 источника: email_tracker</text>
+<text x="380.0" y="2198.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">+ b24_chats + yougile +</text>
+<text x="380.0" y="2215.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">transcripts</text>
+<rect x="270.0" y="2260.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="2286.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">VTM классификация: task /</text>
+<text x="380.0" y="2303.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">project / idea / info</text>
+<rect x="270.0" y="2356.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="2382.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">VTM квадрант: domino /</text>
+<text x="380.0" y="2399.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">investment / trap / trash</text>
+<rect x="270.0" y="2452.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="2469.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">ТОС-скоринг: связь с 7</text>
+<text x="380.0" y="2486.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">НЖЯ, вес = impact ×</text>
+<text x="380.0" y="2503.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">proximity × urgency</text>
+<rect x="270.0" y="2548.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="2565.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Auto-grouping: 10</text>
+<text x="380.0" y="2582.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">зонтичных проектов,</text>
+<text x="380.0" y="2599.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">PARENT-links</text>
+<rect x="270.0" y="2644.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="2670.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Дедупликация: Jaccard +</text>
+<text x="380.0" y="2687.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">LCS, merge дубликатов</text>
+<rect x="270.0" y="2740.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="2757.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Daemon: polling 30 мин</text>
+<text x="380.0" y="2774.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">(sync), 60 мин (alerts),</text>
+<text x="380.0" y="2791.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">10 сек (file watch)</text>
+<rect x="270.0" y="2836.0" width="220" height="44" rx="8" fill="#5a9ab0" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="2862.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="bold" fill="#ffffff">Сессия Claude Code</text>
+<polygon points="295.0,2916.0 485.0,2916.0 465.0,2976.0 275.0,2976.0" fill="#fff0e0" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="2934.0" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">SessionStart hook →</text>
+<text x="380.0" y="2950.0" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">генерация</text>
+<text x="380.0" y="2966.0" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">vault-session-context.md</text>
+<rect x="270.0" y="3012.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="3029.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Контекст: последние 3 дня</text>
+<text x="380.0" y="3046.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">daily files + handoff + 5</text>
+<text x="380.0" y="3063.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">решений</text>
+<rect x="270.0" y="3108.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="3125.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Claude читает</text>
+<text x="380.0" y="3142.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">data/vault-session-context.md</text>
+<text x="380.0" y="3159.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">→ знает что было</text>
+<rect x="270.0" y="3204.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="3213.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Работа в сессии:</text>
+<text x="380.0" y="3230.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">session-buffer.json</text>
+<text x="380.0" y="3247.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">(commands, entities,</text>
+<text x="380.0" y="3264.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">notes)</text>
+<polygon points="380.0,3300.0 490.0,3340.0 380.0,3380.0 270.0,3340.0" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="3336.0" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Завершено ТЗ или git</text>
+<text x="380.0" y="3352.0" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">commit?</text>
+<text x="386.0" y="3396.0" text-anchor="middle" font-size="11" fill="#444444" font-style="italic">Да</text>
+<text x="500.0" y="3344.0" text-anchor="start" font-size="11" fill="#444444" font-style="italic">Нет</text>
+<rect x="270.0" y="3416.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="3433.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">memory_write.py: запись</text>
+<text x="380.0" y="3450.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">summary в</text>
+<text x="380.0" y="3467.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">memory/YYYY-MM-DD.md</text>
+<rect x="270.0" y="3512.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="3529.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Incremental index: новый</text>
+<text x="380.0" y="3546.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">чанк → vault_entries +</text>
+<text x="380.0" y="3563.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">FTS5</text>
+<polygon points="275.0,3608.0 465.0,3608.0 485.0,3668.0 295.0,3668.0" fill="#fff0e0" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="3634.0" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">SessionStop hook →</text>
+<text x="380.0" y="3650.0" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">автоматический handoff</text>
+<rect x="270.0" y="3704.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="3721.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">vault_sessions:</text>
+<text x="380.0" y="3738.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">session_id, commands,</text>
+<text x="380.0" y="3755.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">summary, handoff text</text>
+<rect x="270.0" y="3800.0" width="220" height="44" rx="8" fill="#5a9ab0" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="3818.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="bold" fill="#ffffff">Memory Vault (хранение и</text>
+<text x="380.0" y="3835.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="bold" fill="#ffffff">поиск)</text>
+<rect x="270.0" y="3880.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="3889.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">vault.py:</text>
+<text x="380.0" y="3906.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">index_all_files() —</text>
+<text x="380.0" y="3923.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">парсинг daily + MEMORY.md</text>
+<text x="380.0" y="3940.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">+ decisions-log</text>
+<rect x="270.0" y="3976.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="3993.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">FTS5: полнотекстовый</text>
+<text x="380.0" y="4010.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">поиск, tokenize=unicode61,</text>
+<text x="380.0" y="4027.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">BM25 scoring</text>
+<rect x="270.0" y="4072.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="4089.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Embeddings: e5-small 384d</text>
+<text x="380.0" y="4106.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">(CUDA), passage: / query:</text>
+<text x="380.0" y="4123.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">prefix</text>
+<rect x="270.0" y="4168.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="4185.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Hybrid search: BM25×0.35 +</text>
+<text x="380.0" y="4202.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">cosine×0.45 +</text>
+<text x="380.0" y="4219.5" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">temporal_decay×0.20</text>
+<polygon points="380.0,4264.0 490.0,4304.0 380.0,4344.0 270.0,4304.0" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="4300.0" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Daily file старше 30</text>
+<text x="380.0" y="4316.0" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">дней?</text>
+<text x="386.0" y="4360.0" text-anchor="middle" font-size="11" fill="#444444" font-style="italic">Да</text>
+<text x="500.0" y="4308.0" text-anchor="start" font-size="11" fill="#444444" font-style="italic">Нет</text>
+<rect x="270.0" y="4380.0" width="220" height="60" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="380.0" y="4389.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">Compaction: Claude</text>
+<text x="380.0" y="4406.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">извлекает факты →</text>
+<text x="380.0" y="4423.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">MEMORY.md +</text>
+<text x="380.0" y="4440.0" text-anchor="middle" font-size="13" font-family="Arial,sans-serif" font-weight="normal" fill="#1a1a1a">memory/archive/</text>
+<polygon points="280.0,4476.0 468.0,4476.0 480.0,4488.0 480.0,4536.0 280.0,4536.0" fill="#ffffc0" stroke="#000000" stroke-width="1" stroke-dasharray="5,3"/>
+<polyline points="468.0,4476.0 468.0,4488.0 480.0,4488.0" fill="none" stroke="#000000" stroke-width="1"/>
+<text x="380.0" y="4457.0" text-anchor="middle" font-size="11" font-family="Arial,sans-serif" font-weight="normal" fill="#444444">Результат: 06-KB/people/</text>
+<text x="380.0" y="4472.0" text-anchor="middle" font-size="11" font-family="Arial,sans-serif" font-weight="normal" fill="#444444">(69 профилей),</text>
+<text x="380.0" y="4487.0" text-anchor="middle" font-size="11" font-family="Arial,sans-serif" font-weight="normal" fill="#444444">06-KB/company/</text>
+<text x="380.0" y="4502.0" text-anchor="middle" font-size="11" font-family="Arial,sans-serif" font-weight="normal" fill="#444444">(культура),</text>
+<text x="380.0" y="4517.0" text-anchor="middle" font-size="11" font-family="Arial,sans-serif" font-weight="normal" fill="#444444">memory-vault.db</text>
+<text x="380.0" y="4532.0" text-anchor="middle" font-size="11" font-family="Arial,sans-serif" font-weight="normal" fill="#444444">(FTS+vector),</text>
+<text x="380.0" y="4547.0" text-anchor="middle" font-size="11" font-family="Arial,sans-serif" font-weight="normal" fill="#444444">task-intelligence.db</text>
+<text x="380.0" y="4562.0" text-anchor="middle" font-size="11" font-family="Arial,sans-serif" font-weight="normal" fill="#444444">(1046 задач)</text>
+</svg></div>
+</div>
+<script>
+  let scale = 1;
+  const wrap = document.getElementById('svg-wrap');
+  const lbl  = document.getElementById('zoom-label');
+  function zoom(f) {
+    scale = Math.min(Math.max(scale * f, 0.3), 3);
+    wrap.style.transform = `scale(${scale})`;
+    lbl.textContent = Math.round(scale * 100) + '%';
+  }
+  function resetZoom() {
+    scale = 1; wrap.style.transform = 'scale(1)'; lbl.textContent = '100%';
+  }
+</script>
+</body>
+</html>

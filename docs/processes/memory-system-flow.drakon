@@ -1,0 +1,260 @@
+{
+    "type": "drakon",
+    "items": {
+        "header": {"type": "header"},
+        "1": {"type": "end"},
+
+        "2": {
+            "type": "branch",
+            "branchId": 1,
+            "one": "10",
+            "content": "<p>Входящие каналы</p>"
+        },
+        "10": {
+            "type": "comment",
+            "one": "11",
+            "content": "<p>6 каналов: Аудио, Email, B24 чаты, YouGile, Текст (DROP-HERE), Сессия Claude Code</p>"
+        },
+        "11": {
+            "type": "action",
+            "one": "12",
+            "content": "<p>Аудио: Whisper large-v3 (CUDA) → транскрибация + pyannote (диаризация)</p>"
+        },
+        "12": {
+            "type": "action",
+            "one": "13",
+            "content": "<p>Voice Embeddings: wespeaker 256-dim → speaker identification</p>"
+        },
+        "13": {
+            "type": "action",
+            "one": "14",
+            "content": "<p>Claude анализ: summary, решения, задачи, риски → 02-TRANSCRIPTS/*.md</p>"
+        },
+        "14": {
+            "type": "action",
+            "one": "15",
+            "content": "<p>Пользователь заполняет имена спикеров → apply_speaker_names()</p>"
+        },
+        "15": {
+            "type": "action",
+            "one": "16",
+            "content": "<p>Email: IMAP sync → email-archive.db → email-tracker.json</p>"
+        },
+        "16": {
+            "type": "action",
+            "one": "17",
+            "content": "<p>B24 чаты: 6 CRM-чатов, webhook API → b24_crm_chats.json → problem_matcher</p>"
+        },
+        "17": {
+            "type": "action",
+            "one": "18",
+            "content": "<p>YouGile: Excel export → парсинг → task-intelligence.db</p>"
+        },
+        "18": {
+            "type": "action",
+            "one": "19",
+            "content": "<p>DROP-HERE: inbox_dispatcher.py → классификация → обработчик по типу</p>"
+        },
+        "19": {
+            "type": "action",
+            "one": "20",
+            "content": "<p>Все задачи → Task Intelligence: 4 источника → единая БД (task-intelligence.db)</p>"
+        },
+
+        "20": {
+            "type": "branch",
+            "branchId": 2,
+            "one": "21",
+            "content": "<p>Извлечение знаний</p>"
+        },
+        "21": {
+            "type": "action",
+            "one": "22",
+            "content": "<p>behavioral_extractor.py: Claude API извлекает DISC (0-1), Big5 (0-1), лингвистику</p>"
+        },
+        "22": {
+            "type": "action",
+            "one": "23",
+            "content": "<p>quantitative.py: время речи %, повороты, перебивания, вопросы vs утверждения</p>"
+        },
+        "23": {
+            "type": "action",
+            "one": "24",
+            "content": "<p>storage.append_observation() → 06-KB/people/{id}/raw-observations.json</p>"
+        },
+        "24": {
+            "type": "question",
+            "flag1": 1,
+            "one": "25",
+            "two": "27",
+            "content": "<p>Порог синтеза достигнут? (3, 5 или 8 встреч)</p>"
+        },
+        "25": {
+            "type": "action",
+            "one": "26",
+            "content": "<p>profile_synthesizer.py: полный профиль DISC + Big5 + стиль + триггеры</p>"
+        },
+        "26": {
+            "type": "action",
+            "one": "27",
+            "content": "<p>→ psychotype-profile.md + communication-guide.md (confidence: 15% × встреч)</p>"
+        },
+        "27": {
+            "type": "question",
+            "flag1": 1,
+            "one": "28",
+            "two": "29",
+            "content": "<p>Каждые 5 новых наблюдений?</p>"
+        },
+        "28": {
+            "type": "action",
+            "one": "29",
+            "content": "<p>culture_analyzer.py: CVF/OCAI профиль компании → culture-profile.md</p>"
+        },
+        "29": {
+            "type": "action",
+            "one": "30",
+            "content": "<p>Email профилирование: стиль, тон, формулировки → raw-observations.json</p>"
+        },
+
+        "30": {
+            "type": "branch",
+            "branchId": 3,
+            "one": "31",
+            "content": "<p>Task Intelligence</p>"
+        },
+        "31": {
+            "type": "action",
+            "one": "32",
+            "content": "<p>4 источника: email_tracker + b24_chats + yougile + transcripts</p>"
+        },
+        "32": {
+            "type": "action",
+            "one": "33",
+            "content": "<p>VTM классификация: task / project / idea / info</p>"
+        },
+        "33": {
+            "type": "action",
+            "one": "34",
+            "content": "<p>VTM квадрант: domino / investment / trap / trash</p>"
+        },
+        "34": {
+            "type": "action",
+            "one": "35",
+            "content": "<p>ТОС-скоринг: связь с 7 НЖЯ, вес = impact × proximity × urgency</p>"
+        },
+        "35": {
+            "type": "action",
+            "one": "36",
+            "content": "<p>Auto-grouping: 10 зонтичных проектов, PARENT-links</p>"
+        },
+        "36": {
+            "type": "action",
+            "one": "37",
+            "content": "<p>Дедупликация: Jaccard + LCS, merge дубликатов</p>"
+        },
+        "37": {
+            "type": "action",
+            "one": "38",
+            "content": "<p>Daemon: polling 30 мин (sync), 60 мин (alerts), 10 сек (file watch)</p>"
+        },
+
+        "38": {
+            "type": "branch",
+            "branchId": 4,
+            "one": "40",
+            "content": "<p>Сессия Claude Code</p>"
+        },
+        "40": {
+            "type": "simpleinput",
+            "one": "41",
+            "content": "<p>SessionStart hook → генерация vault-session-context.md</p>"
+        },
+        "41": {
+            "type": "action",
+            "one": "42",
+            "content": "<p>Контекст: последние 3 дня daily files + handoff + 5 решений</p>"
+        },
+        "42": {
+            "type": "action",
+            "one": "43",
+            "content": "<p>Claude читает data/vault-session-context.md → знает что было</p>"
+        },
+        "43": {
+            "type": "action",
+            "one": "44",
+            "content": "<p>Работа в сессии: session-buffer.json (commands, entities, notes)</p>"
+        },
+        "44": {
+            "type": "question",
+            "flag1": 1,
+            "one": "45",
+            "two": "47",
+            "content": "<p>Завершено ТЗ или git commit?</p>"
+        },
+        "45": {
+            "type": "action",
+            "one": "46",
+            "content": "<p>memory_write.py: запись summary в memory/YYYY-MM-DD.md</p>"
+        },
+        "46": {
+            "type": "action",
+            "one": "47",
+            "content": "<p>Incremental index: новый чанк → vault_entries + FTS5</p>"
+        },
+        "47": {
+            "type": "simpleoutput",
+            "one": "48",
+            "content": "<p>SessionStop hook → автоматический handoff</p>"
+        },
+        "48": {
+            "type": "action",
+            "one": "49",
+            "content": "<p>vault_sessions: session_id, commands, summary, handoff text</p>"
+        },
+
+        "49": {
+            "type": "branch",
+            "branchId": 5,
+            "one": "50",
+            "content": "<p>Memory Vault (хранение и поиск)</p>"
+        },
+        "50": {
+            "type": "action",
+            "one": "51",
+            "content": "<p>vault.py: index_all_files() — парсинг daily + MEMORY.md + decisions-log</p>"
+        },
+        "51": {
+            "type": "action",
+            "one": "52",
+            "content": "<p>FTS5: полнотекстовый поиск, tokenize=unicode61, BM25 scoring</p>"
+        },
+        "52": {
+            "type": "action",
+            "one": "53",
+            "content": "<p>Embeddings: e5-small 384d (CUDA), passage: / query: prefix</p>"
+        },
+        "53": {
+            "type": "action",
+            "one": "54",
+            "content": "<p>Hybrid search: BM25×0.35 + cosine×0.45 + temporal_decay×0.20</p>"
+        },
+        "54": {
+            "type": "question",
+            "flag1": 1,
+            "one": "55",
+            "two": "56",
+            "content": "<p>Daily file старше 30 дней?</p>"
+        },
+        "55": {
+            "type": "action",
+            "one": "56",
+            "content": "<p>Compaction: Claude извлекает факты → MEMORY.md + memory/archive/</p>"
+        },
+        "56": {
+            "type": "comment",
+            "one": "1",
+            "content": "<p>Результат: 06-KB/people/ (69 профилей), 06-KB/company/ (культура), memory-vault.db (FTS+vector), task-intelligence.db (1046 задач)</p>"
+        }
+    }
+}
