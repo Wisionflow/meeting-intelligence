@@ -443,10 +443,10 @@
       </div>
     </div>
 
-    <!-- Pipeline unavailable banner -->
+    <!-- Pipeline unavailable banner (only useful for admin/dev) -->
     <div class="pipeline-banner" id="pipelineBanner">
       <div class="pb-inner">
-        Для обработки встреч запустите: <code>python -X utf8 run.py --dashboard</code>
+        Запись транскрибирована в упрощённом режиме (без разделения спикеров)
       </div>
     </div>
 
@@ -628,8 +628,8 @@ async function onFile(input) {
           await processCallAudio(file);
         }
       } else {
-        // Pipeline unavailable — show banner, use Groq
-        document.getElementById('pipelineBanner').classList.add('show');
+        // Pipeline unavailable — transcribe via Groq silently
+        toast('Транскрибирую запись...');
         await processCallAudio(file);
       }
       continue;
@@ -656,23 +656,59 @@ async function onFile(input) {
 
 // ─── Call audio (Groq, no diarization) ──────────────────────────────────
 
+const CHUNK_SIZE = 768 * 1024; // 768KB per chunk (safe under nginx 1MB default)
+
 async function processCallAudio(file) {
-  toast('Транскрибирую звонок...');
-  const fd = new FormData();
-  fd.append('file', file);
+  toast('Транскрибирую запись...');
   try {
-    const r = await fetch(API + '/api/communicate/transcribe', { method: 'POST', body: fd });
-    const d = await r.json();
+    let d;
+    if (file.size <= CHUNK_SIZE) {
+      // Small file — direct upload
+      const fd = new FormData();
+      fd.append('file', file);
+      const r = await fetch(API + '/api/communicate/transcribe', { method: 'POST', body: fd });
+      d = await r.json();
+    } else {
+      // Large file — chunked upload
+      d = await chunkedUpload(file);
+    }
     if (d.transcript) {
       attachedFiles.push({ type: 'document', filename: file.name, text: d.transcript });
       renderFileChips();
-      toast('Звонок расшифрован (' + Math.round(d.duration || 0) + ' сек)');
+      toast('Запись расшифрована (' + Math.round(d.duration || 0) + ' сек)');
     } else {
       toast('Ошибка: ' + (d.detail || 'не удалось транскрибировать'));
     }
   } catch(e) {
     toast('Ошибка: ' + e.message);
   }
+}
+
+async function chunkedUpload(file) {
+  const uploadId = crypto.randomUUID();
+  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+  toast(`Загрузка ${totalChunks} частей...`);
+
+  for (let i = 0; i < totalChunks; i++) {
+    const start = i * CHUNK_SIZE;
+    const end = Math.min(start + CHUNK_SIZE, file.size);
+    const chunk = file.slice(start, end);
+    const fd = new FormData();
+    fd.append('file', new File([chunk], file.name));
+    const params = new URLSearchParams({
+      upload_id: uploadId, chunk_index: i,
+      total_chunks: totalChunks, filename: file.name,
+    });
+    const r = await fetch(API + `/api/communicate/upload-chunk?${params}`, { method: 'POST', body: fd });
+    if (!r.ok) throw new Error(`Chunk ${i+1}/${totalChunks} failed`);
+    toast(`Загружено ${i+1}/${totalChunks}...`);
+  }
+
+  toast('Транскрибирую...');
+  const params = new URLSearchParams({ upload_id: uploadId });
+  const r = await fetch(API + `/api/communicate/upload-complete?${params}`, { method: 'POST' });
+  if (!r.ok) { const e = await r.json(); throw new Error(e.detail || 'Upload failed'); }
+  return await r.json();
 }
 
 // ─── Meeting audio (tss-ops pipeline with diarization) ──────────────────
@@ -713,7 +749,7 @@ async function processMeetingAudio(file) {
     stopStreamingIndicator();
     if (e.name === 'TypeError' && e.message.includes('fetch')) {
       document.getElementById('pipelineBanner').classList.add('show');
-      addAiError('tss-ops пайплайн недоступен. Запустите: python -X utf8 run.py --dashboard');
+      addAiError('Модуль диаризации недоступен. Используйте транскрипцию без разделения спикеров.');
     } else {
       addAiError('Ошибка обработки: ' + e.message);
     }

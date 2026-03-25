@@ -559,6 +559,73 @@ async def api_transcribe_for_context(request: Request, file: UploadFile = File(.
         upload_path.unlink(missing_ok=True)
 
 
+# ─── Chunked upload (bypass nginx 1MB limit) ─────────────────────────────────
+
+_chunked_uploads: dict[str, dict] = {}  # upload_id -> {path, filename, received}
+
+
+@app.post("/api/communicate/upload-chunk")
+async def api_upload_chunk(request: Request, upload_id: str = "", chunk_index: int = 0,
+                           total_chunks: int = 1, filename: str = "",
+                           file: UploadFile = File(...)):
+    _require_user(request)
+    if not upload_id:
+        raise HTTPException(400, "upload_id required")
+
+    if upload_id not in _chunked_uploads:
+        upload_path = Path(config.UPLOAD_DIR) / f"chunked_{upload_id}"
+        upload_path.mkdir(parents=True, exist_ok=True)
+        _chunked_uploads[upload_id] = {
+            "dir": upload_path, "filename": filename,
+            "total": total_chunks, "received": set(),
+        }
+
+    info = _chunked_uploads[upload_id]
+    chunk_path = info["dir"] / f"chunk_{chunk_index:04d}"
+    with open(chunk_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    info["received"].add(chunk_index)
+
+    return {"ok": True, "received": len(info["received"]), "total": info["total"]}
+
+
+@app.post("/api/communicate/upload-complete")
+async def api_upload_complete(request: Request, upload_id: str = ""):
+    _require_user(request)
+    if upload_id not in _chunked_uploads:
+        raise HTTPException(404, "Upload not found")
+
+    info = _chunked_uploads.pop(upload_id)
+    if len(info["received"]) < info["total"]:
+        raise HTTPException(400, f"Missing chunks: got {len(info['received'])}/{info['total']}")
+
+    # Assemble file
+    assembled = Path(config.UPLOAD_DIR) / f"ctx_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{info['filename']}"
+    with open(assembled, "wb") as out:
+        for i in range(info["total"]):
+            chunk_path = info["dir"] / f"chunk_{i:04d}"
+            with open(chunk_path, "rb") as cp:
+                shutil.copyfileobj(cp, out)
+
+    # Cleanup chunks
+    shutil.rmtree(info["dir"], ignore_errors=True)
+
+    # Transcribe
+    try:
+        result = await transcribe(str(assembled))
+        formatted = format_transcript(result["segments"])
+        return {
+            "transcript": formatted,
+            "text": result["text"],
+            "duration": result["duration"],
+            "language": result["language"],
+        }
+    except Exception as e:
+        raise HTTPException(500, f"Transcription error: {e}")
+    finally:
+        assembled.unlink(missing_ok=True)
+
+
 # ─── Upload file for context (images, documents) ─────────────────────────────
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
