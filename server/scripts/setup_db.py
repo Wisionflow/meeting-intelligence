@@ -75,6 +75,35 @@ CREATE TABLE IF NOT EXISTS mi_communications (
 CREATE INDEX IF NOT EXISTS idx_mi_comm_user ON mi_communications(user_id);
 CREATE INDEX IF NOT EXISTS idx_mi_comm_profile ON mi_communications(profile_id);
 CREATE INDEX IF NOT EXISTS idx_mi_comm_created ON mi_communications(created_at DESC);
+
+-- User Memory (CI-MEMORY: contextual memory for VisionFlow users)
+CREATE TABLE IF NOT EXISTS mi_user_memory (
+    id              SERIAL PRIMARY KEY,
+    user_id         TEXT NOT NULL,
+    memory_type     TEXT NOT NULL,       -- context | pattern | preference | decision
+    content         TEXT NOT NULL,        -- the actual memory content
+    entities        JSONB DEFAULT '[]',   -- extracted entities: people, tasks, decisions
+    source          TEXT DEFAULT '',      -- chat | meeting | upload | system
+    source_id       TEXT DEFAULT '',      -- meeting_id or chat message ref
+    relevance       REAL DEFAULT 1.0,     -- decays over time (temporal relevance)
+    created_at      TIMESTAMPTZ DEFAULT NOW(),
+    expires_at      TIMESTAMPTZ           -- NULL = permanent, else auto-cleanup
+);
+
+CREATE INDEX IF NOT EXISTS idx_mi_memory_user ON mi_user_memory(user_id);
+CREATE INDEX IF NOT EXISTS idx_mi_memory_type ON mi_user_memory(user_id, memory_type);
+CREATE INDEX IF NOT EXISTS idx_mi_memory_created ON mi_user_memory(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_mi_memory_entities ON mi_user_memory USING gin(entities);
+
+-- Session backup (resilience: recoverable after crashes)
+CREATE TABLE IF NOT EXISTS mi_user_sessions (
+    id              SERIAL PRIMARY KEY,
+    user_id         TEXT NOT NULL,
+    session_data    JSONB NOT NULL,       -- full chat history snapshot
+    created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_mi_sessions_user ON mi_user_sessions(user_id, created_at DESC);
 """
 
 
@@ -97,6 +126,12 @@ async def main():
 
         count_c = await conn.fetchval("SELECT COUNT(*) FROM mi_communications")
         print(f"  mi_communications: {count_c} records")
+
+        count_m = await conn.fetchval("SELECT COUNT(*) FROM mi_user_memory")
+        print(f"  mi_user_memory: {count_m} records")
+
+        count_s = await conn.fetchval("SELECT COUNT(*) FROM mi_user_sessions")
+        print(f"  mi_user_sessions: {count_s} records")
 
     finally:
         await conn.close()
